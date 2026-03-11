@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+
+<body>
+    <div id="app-container">
+        <div id="panel">
+            <div class="header">
+                <div class="flex-center">
+                    <span class="settings-icon sys-menu-btn" id="btn-sys-menu" title="系統選單">⋮</span>
+                    <span class="settings-icon" id="btn-settings" title="庫存設定">📦</span>
+                    <span class="app-title" id="app-title-text"></span>
+                </div>
+                <div class="flex-center">
+                    <span id="pin-btn" class="pin-icon" title="釘選視窗">📌</span>
+                    <span class="close-panel-btn" id="btn-close-panel">✖</span>
+                </div>
+            </div>
+
+            <div id="main-view">
+                <div class="gold-bar" id="gold-area">
+                    <div class="gold-title">🪙 黃金存摺</div>
+                    <div class="gold-info">
+                        <div>載入中...</div>
+                    </div>
+                </div>
+                <div class="rate-bar" id="rate-area"></div>
+                <div class="input-section">
+                    <input type="text" id="stock-input" class="input-box" placeholder="輸入代碼或中文搜尋">
+                    <button class="action-btn" id="btn-search">搜尋</button>
+                </div>
+                <div class="portfolio-tabs" id="portfolio-tabs">
+                    <div class="tab-item active" data-tab="all">全部</div>
+                    <div class="tab-item" data-tab="tw">🇹🇼 台股</div>
+                    <div class="tab-item" data-tab="us">🇺🇸 美股</div>
+                </div>
+                <div class="content" id="data-area">載入資料中...</div>
+            </div>
+
+            <div id="inventory-panel">
+                <div class="inv-panel-header">
+                    <span> 庫存設定</span>
+                    <div class="flex-gap-5">
+                        <button class="action-btn btn-secondary" id="btn-back">返回</button>
+                    </div>
+                </div>
+
+                <div class="inv-form">
+                    <div class="inv-form-header" id="btn-toggle-inv-form">
+                        <div class="inv-form-title">➕ 新增</div>
+                        <div id="inv-form-toggle-icon" class="inv-form-toggle-icon">▼</div>
+                    </div>
+                
+                    <div id="inv-form-body" class="inv-form-body hidden">
+                        <div class="inv-row">
+                            <input type="text" id="inv-symbol-search" class="input-box flex-1" placeholder="輸入代碼搜尋...">
+                            <button class="action-btn w-30" id="btn-inv-search">🔍</button>
+                        </div>
+                        <div id="inv-search-results"></div>
+                
+                        <input type="text" id="inv-symbol-locked" class="input-box" readonly>
+                
+                        <div class="inv-row">
+                            <input type="number" id="inv-price" class="input-box flex-1" placeholder="單價">
+                            <input type="number" id="inv-shares" class="input-box flex-1" placeholder="股數">
+                        </div>
+                        <div class="inv-row">
+                            <input type="number" id="inv-rate" class="input-box flex-1" placeholder="匯率">
+                            <input type="date" id="inv-date" class="input-box flex-1-5">
+                        </div>
+                        <div class="inv-row justify-end">
+                            <button class="action-btn w-100" id="btn-add-inv">+ 新增</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="inv-sort-bar">
+                    <div class="inv-controls"> -->
+                        <div class="portfolio-tabs" id="inv-tabs">
+                            <div class="tab-item active" data-tab="all">全部</div>
+                            <div class="tab-item" data-tab="tw">🇹🇼 台股</div>
+                            <div class="tab-item" data-tab="us">🇺🇸 美股</div>
+                        </div>
+                    <!-- </div> -->
+                <!-- </div> -->
+
+
+                <div class="inv-list" id="inv-list-area">
+                    <div class="empty-message">載入中...</div>
+                </div>
+            </div>
+
+            <div id="system-menu">
+                <div class="sys-settings-panel">
+                    <div class="sys-settings-title">⚙️ 系統設定</div>
+
+
+                    <div class="sys-input-group">
+                        <label class="sys-label">🔑 富果 API Key</label>
+                        <input type="password" id="setting-fugle-input" class="sys-input" placeholder="貼上金鑰">
+                    </div>
+
+                    <button id="btn-settings-save" class="sys-btn-save">儲存設定</button>
+                </div>
+
+                <div class="sys-divider"></div>
+
+                <div class="sys-item" id="sys-import">📂 匯入清單</div>
+                <div class="sys-item" id="sys-share">🤝 分享清單</div>
+            </div>
+            <input type="file" id="import-file" accept=".json">
+
+            <div id="alert-modal" class="modal-overlay">
+                <div class="modal-box">
+                    <div id="alert-text" class="modal-title"></div>
+                    <div class="modal-actions"><button class="modal-btn btn-confirm" id="btn-alert-ok">好</button></div>
+                </div>
+            </div>
+
+            <div id="confirm-modal" class="modal-overlay">
+                <div class="modal-box">
+                    <div id="modal-text" class="modal-title"></div>
+                    <div class="modal-actions">
+                        <button class="modal-btn" id="btn-confirm-cancel">取消</button>
+                        <button class="modal-btn btn-yes" id="btn-confirm-ok">確定</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="rename-modal" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-title">修改名稱</div>
+                    <input type="text" id="rename-input" class="input-box">
+                    <div class="modal-actions">
+                        <button class="modal-btn" id="btn-rename-cancel">取消</button>
+                        <button class="modal-btn btn-confirm" id="btn-rename-ok">儲存</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="currency-modal" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-title">新增幣別</div>
+                    <select id="currency-select">
+                        <option value="USD">美元 (USD)</option>
+                        <option value="JPY">日圓 (JPY)</option>
+                        <option value="CNY">人民幣 (CNY)</option>
+                        <option value="EUR">歐元 (EUR)</option>
+                        <option value="HKD">港幣 (HKD)</option>
+                        <option value="GBP">英鎊 (GBP)</option>
+                        <option value="AUD">澳幣 (AUD)</option>
+                        <option value="SGD">新加坡幣 (SGD)</option>
+                    </select>
+                    <div class="modal-actions">
+                        <button class="modal-btn" id="btn-curr-cancel">取消</button>
+                        <button class="modal-btn btn-confirm" id="btn-curr-ok">新增</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="toggle-btn"><img id="app-logo-img" src=""></div>
+
+        <div id="context-menu" class="context-menu">
+            <div class="ctx-item" id="ctx-chart">📈 K 線圖</div>
+            <div class="ctx-item" id="ctx-hide">📉 縮小</div>
+            <div class="ctx-item" id="ctx-rename">✎ 重新命名</div>
+            <div class="ctx-item delete" id="ctx-delete">🗑 移除股票</div>
+        </div>
+
+        <div id="chart-modal" class="chart-modal-overlay">
+            <div class="chart-modal-content">
+                <div class="chart-header">
+                    <div class="chart-title-area">
+                        <h3 id="chart-title" class="chart-title-text">K 線圖</h3>
+
+                        <div id="chart-tw-controls" class="chart-controls">
+                            <button id="btn-chart-twse" class="chart-btn chart-btn-twse">證交所 (本月)</button>
+                            <button id="btn-chart-fugle" class="chart-btn chart-btn-fugle">富果 API (半年)</button>
+                        </div>
+                    </div>
+                    <span id="btn-chart-close" class="chart-close-btn">&times;</span>
+                </div>
+                <div id="chart-container" class="chart-container-box"></div>
+            </div>
+        </div>
+    </div>
+    <div id="fugle-modal" class="fugle-modal-overlay">
+        <div class="fugle-modal-content">
+            <div class="fugle-modal-title">🚀 輸入 Fugle API Key</div>
+            <div class="fugle-modal-desc">請貼上您的富果開發者金鑰<br>(僅需輸入一次，系統會自動記憶)</div>
+            <input type="text" id="fugle-key-input" class="fugle-modal-input" placeholder="請貼上 API Key">
+            <div class="fugle-modal-actions">
+                <button class="action-btn fugle-btn-cancel" id="btn-fugle-cancel">取消</button>
+                <button class="action-btn" id="btn-fugle-ok">確認</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
