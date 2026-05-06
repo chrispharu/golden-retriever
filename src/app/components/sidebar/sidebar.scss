@@ -72,73 +72,70 @@
 
 .stock-card {
   border-left: 4px solid #e0e0e0;
-  padding: 1rem !important;
+  padding: 1.25rem !important;
   
   &.up { border-left-color: var(--friendly-green); }
   &.down { border-left-color: var(--playful-red); }
 
   .card-main {
     cursor: pointer;
-    .stock-header {
+    margin-bottom: 0.75rem;
+
+    .card-row1 {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
 
-      .name-block {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        
-        .name { font-size: 1.1rem; font-weight: 700; color: var(--color-text-primary); }
-        .symbol-row {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          .symbol { font-size: 0.75rem; font-weight: 600; color: var(--color-text-tertiary); }
-          .market-tag {
-            font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 100px;
-            background: #eee; color: #666;
-            &.is-open { background: #eaf3de; color: #3b6d11; }
-          }
-        }
-      }
+      .stock-name { font-size: 1.15rem; font-weight: 700; color: var(--color-text-primary); }
+      .stock-code { font-size: 0.75rem; font-weight: 600; color: var(--color-text-tertiary); margin-top: 2px; }
 
       .price-block {
         text-align: right;
         &.up { color: var(--friendly-green); }
         &.down { color: var(--playful-red); }
-        
-        .price-main { font-size: 1.25rem; font-weight: 700; }
-        .price-change { font-size: 0.75rem; font-weight: 600; margin-top: 2px; }
+        .price-main { font-size: 1.25rem; font-weight: 800; }
+        .price-change { font-size: 0.75rem; font-weight: 700; }
       }
     }
   }
 
-  .card-footer {
+  .status-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    .status-pill {
+      font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 100px;
+      &.pill-open { background: #eaf3de; color: #3b6d11; }
+      &.pill-close { background: #f1efe8; color: #5f5e5a; }
+    }
+  }
+
+  .range-bar-wrap {
+    margin: 0.75rem 0;
+    .range-track {
+      height: 4px; background: #eee; border-radius: 2px; position: relative;
+      .range-fill { height: 4px; border-radius: 2px; background: var(--friendly-green); }
+      .range-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--friendly-green); border: 2px solid white; position: absolute; top: -2px; transform: translateX(-4px); }
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-top: 1rem;
     padding-top: 0.75rem;
-    border-top: 0.5px solid var(--color-border-tertiary);
+    border-top: 1px dashed var(--color-border-tertiary);
 
-    .action-btns {
-      display: flex;
-      gap: 0.5rem;
-      
-      .btn-action {
-        padding: 0.35rem 0.6rem;
-        border-radius: 8px;
-        border: 1px solid var(--color-border-tertiary);
-        background: var(--color-background-secondary);
-        color: var(--color-text-secondary);
-        font-size: 0.75rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover { background: #e9ecef; }
-        &.active { background: var(--primary-gold); color: var(--fur-brown); border-color: var(--primary-gold); }
-        &.btn-danger:hover { color: var(--playful-red); border-color: #ffcdd2; background: #fff5f5; }
-      }
+    .btn-group { display: flex; gap: 0.5rem; }
+    .btn-sm {
+      padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid var(--color-border-tertiary);
+      background: var(--color-background-secondary); font-size: 0.75rem; font-weight: 800; cursor: pointer;
+      &.active { background: var(--primary-gold); border-color: var(--primary-gold); }
     }
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+    .btn-del { color: var(--playful-red); &:hover { opacity: 0.7; } }
   }
 
   .quick-add-panel {
@@ -154,9 +151,9 @@
       gap: 0.75rem;
 
       .row {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
 
         .form-field {
           display: flex;
@@ -165,10 +162,10 @@
           label { font-size: 0.65rem; font-weight: 700; color: var(--color-text-tertiary); }
           input {
             width: 100%;
-            padding: 0.4rem;
-            border-radius: 6px;
+            padding: 0.5rem;
+            border-radius: 8px;
             border: 1px solid var(--color-border-tertiary);
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 600;
             &:focus { outline: none; border-color: var(--primary-gold); }
           }
@@ -182,7 +179,7 @@
         padding: 0.5rem;
         border-radius: 8px;
         font-weight: 800;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         cursor: pointer;
       }
     }
