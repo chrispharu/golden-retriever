@@ -58,7 +58,7 @@
 
   <!-- 推薦卡片網格 -->
   <div class="quant-grid" *ngIf="!isLoading() && topStocks().length > 0 && !errorMessage(); else loadingTpl">
-    <div class="quant-card" *ngFor="let s of topStocks()">
+    <div class="quant-card card-base" *ngFor="let s of topStocks()" [class.up]="s.rev_yoy > 0">
       <div class="card-main-header">
         <div class="title">
           <span class="name">{{ s.name }}</span>
@@ -80,24 +80,22 @@
         </div>
         <div class="m-item">
           <span class="label">營收 YoY</span>
-          <b class="value" [class.up]="s.rev_yoy > 0">{{ s.rev_yoy }}%</b>
-        </div>
-        <div class="m-item">
-          <span class="label">大戶增減</span>
-          <b class="value" [class.up]="s.large_holder_change > 0">{{ s.large_holder_change }}%</b>
+          <div class="value" [class.up]="s.rev_yoy > 0" [class.down]="s.rev_yoy < 0">
+            {{ s.rev_yoy > 0 ? '▲' : '▼' }}{{ s.rev_yoy }}%
+          </div>
         </div>
       </div>
 
       <div class="suggested-shares-box">
-        <span class="label">📦 建議買入</span>
-        <span class="value">{{ s.suggested_shares | number }} 股</span>
+        <div class="lbl">📦 建議買入</div>
+        <div class="val">{{ s.suggested_shares | number:'1.2-4' }} 股</div>
       </div>
 
       <div class="card-tags">
         <span class="tag chip" [class.up]="(s.foreign_buy + s.trust_buy) > 0">
           {{ (s.foreign_buy + s.trust_buy) > 0 ? '🔥 法人作多' : '❄️ 法人調節' }}
         </span>
-        <span class="tag trend">
+        <span class="tag trend" [class.up]="s.bias > 0" [class.down]="s.bias < 0">
           {{ s.bias > 0 ? '↗ 強勢' : '↘ 拉回' }}
         </span>
       </div>
