@@ -374,8 +374,13 @@ public class StockController {
         }
 
         for (DashboardResponseDto.GroupedInventory g : groupedInvMap.values()) {
-            StockQuoteDto mkt = stockData.getOrDefault(g.getSymbol(), new StockQuoteDto(BigDecimal.ZERO,
-                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "", null, "CLOSED"));
+            StockQuoteDto mkt = stockData.getOrDefault(g.getSymbol(), StockQuoteDto.builder()
+                    .price(BigDecimal.ZERO)
+                    .prevClose(BigDecimal.ZERO)
+                    .high(BigDecimal.ZERO)
+                    .low(BigDecimal.ZERO)
+                    .marketStatus("CLOSED")
+                    .build());
             BigDecimal currentRate = BigDecimal.ONE;
             if (!g.isTW()) {
                 Map<String, BigDecimal> rateObj = ratesMap.get(CURRENCY_USD);
