@@ -109,6 +109,27 @@
       &.pill-open { background: #eaf3de; color: #3b6d11; }
       &.pill-close { background: #f1efe8; color: #5f5e5a; }
     }
+
+    .vol-tag {
+      font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 100px;
+      background: #faeeda; color: #854f0b;
+    }
+  }
+
+  /* 觀察清單小總覽 */
+  .sidebar-summary {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: var(--soft-cream);
+    border: 1px solid var(--primary-gold);
+    
+    .sum-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .label { font-size: 0.75rem; font-weight: 700; color: var(--light-brown); }
+      .value { font-size: 1.1rem; font-weight: 900; color: var(--fur-brown); }
+    }
   }
 
   .range-bar-wrap {

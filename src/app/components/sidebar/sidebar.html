@@ -1,4 +1,15 @@
 <div class="market-grid-container">
+    <!-- 觀察清單小總覽 -->
+    <div class="sidebar-summary card-base" *ngIf="portfolio.length > 0">
+        <div class="sum-row">
+            <span class="label">觀察清單今日預估損益</span>
+            <div class="value" [class.up]="getDailyChange().amount > 0" [class.down]="getDailyChange().amount < 0">
+                {{ getDailyChange().amount > 0 ? '+' : '' }}NT$ {{ getDailyChange().amount | number:'1.0-0' }}
+                ({{ getDailyChange().percent | percent:'1.2-2' }})
+            </div>
+        </div>
+    </div>
+
     <!-- 工具列 -->
     <div class="market-toolbar">
         <div class="search-input-wrapper">
@@ -43,14 +54,16 @@
                 <span class="status-pill" [class.pill-open]="stock.marketStatus === 'OPEN'" [class.pill-close]="stock.marketStatus !== 'OPEN'">
                     {{ stock.marketStatus === 'OPEN' ? '盤中開市' : '已休市' }}
                 </span>
-                <!-- 預留量能標籤位置 -->
+                <span class="vol-tag" *ngIf="stock.volume && stock.avgVolume">
+                    {{ stock.volume > stock.avgVolume * 1.5 ? '🔥 量增' : '🧊 量縮' }}
+                </span>
             </div>
 
             <!-- 52週進度條 (觀察清單也加入，提升一致性) -->
-            <div class="range-bar-wrap" *ngIf="stock.high && stock.low">
+            <div class="range-bar-wrap" *ngIf="stock.fiftyTwoWeekHigh && stock.fiftyTwoWeekLow">
                 <div class="range-track">
-                    <div class="range-fill" [style.width.%]="50"></div> <!-- 範例數值 -->
-                    <div class="range-dot" [style.left.%]="50"></div>
+                    <div class="range-fill" [style.width.%]="getRangePosition(stock.price, stock.fiftyTwoWeekHigh, stock.fiftyTwoWeekLow)"></div>
+                    <div class="range-dot" [style.left.%]="getRangePosition(stock.price, stock.fiftyTwoWeekHigh, stock.fiftyTwoWeekLow)"></div>
                 </div>
             </div>
 

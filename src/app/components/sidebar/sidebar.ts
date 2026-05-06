@@ -78,6 +78,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return { amount, percent };
   }
 
+  getRangePosition(current: number, high: number, low: number): number {
+    if (!high || !low || high === low) return 50;
+    const pos = ((current - low) / (high - low)) * 100;
+    return Math.min(Math.max(pos, 0), 100);
+  }
+
   addStock(): void {
     if (!this.newStockSymbol) return;
     this.stockService.addStock(this.newStockSymbol).subscribe(() => {
