@@ -1,0 +1,233 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+
+  .app { padding: 16px; background: var(--color-background-tertiary); min-height: 100vh; }
+
+  .summary-bar {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .summary-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .summary-label { font-size: 12px; color: var(--color-text-secondary); }
+  .summary-total { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; border-top: 0.5px solid var(--color-border-tertiary); padding-top: 10px; }
+  .sum-item { text-align: center; }
+  .sum-item .lbl { font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 2px; }
+  .sum-item .val { font-size: 13px; font-weight: 500; }
+  .green { color: #1D9E75; }
+  .red { color: #E24B4A; }
+
+  .section-title { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 8px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .stock-card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .stock-card.up { border-left: 3px solid #1D9E75; }
+  .stock-card.down { border-left: 3px solid #E24B4A; }
+
+  .card-row1 { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .stock-name { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .stock-code { font-size: 11px; color: var(--color-text-tertiary); }
+  .price-block { text-align: right; }
+  .price-main { font-size: 17px; font-weight: 500; }
+  .price-change { font-size: 12px; margin-top: 1px; }
+
+  .status-pill { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 100px; margin-bottom: 8px; }
+  .pill-open { background: #EAF3DE; color: #3B6D11; }
+  .pill-close { background: #F1EFE8; color: #5F5E5A; }
+
+  .card-divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 10px 0; }
+
+  .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .metric { }
+  .metric .lbl { font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 2px; }
+  .metric .val { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+
+  .range-bar-wrap { margin: 10px 0 6px; }
+  .range-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 4px; }
+  .range-track { height: 4px; background: var(--color-background-secondary); border-radius: 2px; position: relative; }
+  .range-fill { height: 4px; border-radius: 2px; background: #1D9E75; }
+  .range-dot { width: 8px; height: 8px; border-radius: 50%; background: #1D9E75; border: 1.5px solid var(--color-background-primary); position: absolute; top: -2px; }
+  .range-pct { font-size: 10px; color: var(--color-text-secondary); text-align: center; margin-top: 3px; }
+
+  .action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .action-btns { display: flex; gap: 6px; }
+  .btn-sm {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .btn-del { color: #E24B4A; border-color: #E24B4A; }
+  .btn-icon { font-size: 14px; padding: 5px 8px; }
+  .vol-tag { font-size: 10px; padding: 2px 7px; border-radius: 100px; background: #FAEEDA; color: #854F0B; }
+
+  .add-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--color-background-primary);
+    border: 0.5px dashed var(--color-border-secondary);
+    border-radius: var(--border-radius-lg);
+    padding: 14px 16px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    width: 100%;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .add-circle { width: 28px; height: 28px; border-radius: 50%; background: var(--color-background-secondary); display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--color-text-secondary); }
+</style>
+
+<div class="app">
+  <div class="summary-bar">
+    <div class="summary-top">
+      <div>
+        <div class="summary-label">總持股市值</div>
+        <div class="summary-total">NT$ 2,148,200</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="summary-label">今日損益</div>
+        <div style="font-size:16px; font-weight:500;" class="green">+NT$ 18,450 &nbsp;+0.87%</div>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <div class="sum-item">
+        <div class="lbl">投入成本</div>
+        <div class="val">NT$ 1,905,000</div>
+      </div>
+      <div class="sum-item">
+        <div class="lbl">累積損益</div>
+        <div class="val green">+12.76%</div>
+      </div>
+      <div class="sum-item">
+        <div class="lbl">持股 / 現金</div>
+        <div class="val">82% / 18%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">持倉 · 2 檔</div>
+
+  <div class="stock-card up">
+    <div class="card-row1">
+      <div>
+        <div class="stock-name">台積電</div>
+        <div class="stock-code">2330.TW &nbsp;·&nbsp; 1 張</div>
+      </div>
+      <div class="price-block">
+        <div class="price-main green">1,025.5</div>
+        <div class="price-change green">▲ 25.0 &nbsp;+2.50%</div>
+      </div>
+    </div>
+    <span class="status-pill pill-open">盤中</span>
+
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="lbl">持股市值</div>
+        <div class="val">NT$ 1,025,500</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">成本均價</div>
+        <div class="val">NT$ 910</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">累積損益</div>
+        <div class="val green">+12.69%</div>
+      </div>
+    </div>
+
+    <div class="range-bar-wrap">
+      <div class="range-labels">
+        <span>52W 低 &nbsp;780</span>
+        <span>52W 高 &nbsp;1,080</span>
+      </div>
+      <div class="range-track">
+        <div class="range-fill" style="width: 82%;"></div>
+        <div class="range-dot" style="left: calc(82% - 4px);"></div>
+      </div>
+      <div class="range-pct">目前位於年內 82% 位置</div>
+    </div>
+
+    <hr class="card-divider">
+    <div class="action-row">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span class="vol-tag">量增價漲</span>
+      </div>
+      <div class="action-btns">
+        <button class="btn-sm btn-icon">📊</button>
+        <button class="btn-sm btn-icon">🧠</button>
+        <button class="btn-sm btn-icon btn-del">🗑</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stock-card down">
+    <div class="card-row1">
+      <div>
+        <div class="stock-name">聯發科</div>
+        <div class="stock-code">2454.TW &nbsp;·&nbsp; 1 張</div>
+      </div>
+      <div class="price-block">
+        <div class="price-main red">1,122.7</div>
+        <div class="price-change red">▼ 18.3 &nbsp;−1.60%</div>
+      </div>
+    </div>
+    <span class="status-pill pill-open">盤中</span>
+
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="lbl">持股市值</div>
+        <div class="val">NT$ 1,122,700</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">成本均價</div>
+        <div class="val">NT$ 1,050</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">累積損益</div>
+        <div class="val green">+6.92%</div>
+      </div>
+    </div>
+
+    <div class="range-bar-wrap">
+      <div class="range-labels">
+        <span>52W 低 &nbsp;890</span>
+        <span>52W 高 &nbsp;1,380</span>
+      </div>
+      <div class="range-track">
+        <div class="range-fill" style="width: 48%; background: #E24B4A;"></div>
+        <div class="range-dot" style="left: calc(48% - 4px); background: #E24B4A;"></div>
+      </div>
+      <div class="range-pct">目前位於年內 48% 位置</div>
+    </div>
+
+    <hr class="card-divider">
+    <div class="action-row">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:10px; padding: 2px 7px; border-radius:100px; background:#FAECE7; color:#993C1D;" class="vol-tag">量縮價跌</span>
+      </div>
+      <div class="action-btns">
+        <button class="btn-sm btn-icon">📊</button>
+        <button class="btn-sm btn-icon">🧠</button>
+        <button class="btn-sm btn-icon btn-del">🗑</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="add-btn">
+    <div class="add-circle">＋</div>
+    <span>新增股票或庫存</span>
+  </button>
+</div>
