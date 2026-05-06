@@ -1,0 +1,113 @@
+<div class="quant-container">
+  <div class="quant-header">
+    <h3>🤖 FinLab AI 機器學習選股 (全維度診斷模式)</h3>
+    <button class="btn-refresh" (click)="fetchQuantData()" [disabled]="isLoading()">
+      {{ isLoading() ? 'AI 運算中...' : (topStocks().length > 0 ? '重新掃描' : '啟動 AI 分析') }}
+    </button>
+  </div>
+
+  <!-- 策略參數設定面板 -->
+  <div class="quant-settings-panel">
+    <div class="setting-item">
+      <label>🎯 標的數量</label>
+      <input type="number" [ngModel]="stockCount()" (ngModelChange)="stockCount.set($event)" min="1" max="20">
+    </div>
+    <div class="setting-item large">
+      <label>💰 啟動資金 (NTD)</label>
+      <input type="number" [ngModel]="initialCapital()" (ngModelChange)="initialCapital.set($event)" step="100000">
+    </div>
+  </div>
+
+  <!-- 參數變更提示 -->
+  <div class="quant-warning-banner" *ngIf="isOutdated() && !isLoading()">
+    ⚠️ 策略參數已變更，請點擊「重新掃描」以更新分析與回測數據。
+  </div>
+
+  <!-- 策略績效看板 -->
+  <div class="quant-performance-banner" *ngIf="performance() as p">
+    <div class="perf-item">
+      <span class="label">🧠 模型類型</span>
+      <span class="value">AI Top {{ stockCount() }} 精選</span>
+    </div>
+    <div class="perf-item highlight">
+      <span class="label">📈 策略年化</span>
+      <span class="value">{{ p.annual_return }}%</span>
+    </div>
+    <div class="perf-item">
+      <span class="label">🎯 預測勝率</span>
+      <span class="value">{{ p.win_rate }}%</span>
+    </div>
+    <div class="perf-item risk">
+      <span class="label">📉 最大回撤</span>
+      <span class="value">{{ p.max_drawdown }}%</span>
+    </div>
+  </div>
+
+  <!-- 錯誤訊息顯示 -->
+  <div class="quant-error" *ngIf="errorMessage()">
+    ⚠️ {{ errorMessage() }}
+  </div>
+
+  <!-- 初始空狀態 -->
+  <div class="quant-placeholder" *ngIf="!isLoading() && topStocks().length === 0 && !errorMessage()">
+    <div class="placeholder-content">
+      <span class="icon">🤖</span>
+      <p>點擊按鈕，啟動 LightGBM 機器學習模型執行全維度選股預測</p>
+    </div>
+  </div>
+
+  <!-- 推薦卡片網格 -->
+  <div class="quant-grid" *ngIf="!isLoading() && topStocks().length > 0 && !errorMessage(); else loadingTpl">
+    <div class="quant-card" *ngFor="let s of topStocks()">
+      <div class="card-main-header">
+        <div class="title">
+          <span class="name">{{ s.name }}</span>
+          <span class="symbol">{{ s.symbol }}</span>
+        </div>
+        <div class="ai-badge" [class.high]="s.ai_score > 85">
+          🧠 {{ s.ai_score }}
+        </div>
+      </div>
+      
+      <div class="metrics-grid">
+        <div class="m-item">
+          <span class="label">ROE</span>
+          <span class="value">{{ s.roe }}%</span>
+        </div>
+        <div class="m-item">
+          <span class="label">PE</span>
+          <span class="value">{{ s.pe }}</span>
+        </div>
+        <div class="m-item">
+          <span class="label">營收 YoY</span>
+          <b class="value" [class.up]="s.rev_yoy > 0">{{ s.rev_yoy }}%</b>
+        </div>
+        <div class="m-item">
+          <span class="label">大戶增減</span>
+          <b class="value" [class.up]="s.large_holder_change > 0">{{ s.large_holder_change }}%</b>
+        </div>
+      </div>
+
+      <div class="suggested-shares-box">
+        <span class="label">📦 建議買入</span>
+        <span class="value">{{ s.suggested_shares | number }} 股</span>
+      </div>
+
+      <div class="card-tags">
+        <span class="tag chip" [class.up]="(s.foreign_buy + s.trust_buy) > 0">
+          {{ (s.foreign_buy + s.trust_buy) > 0 ? '🔥 法人作多' : '❄️ 法人調節' }}
+        </span>
+        <span class="tag trend">
+          {{ s.bias > 0 ? '↗ 強勢' : '↘ 拉回' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #loadingTpl>
+    <div class="loading-box" *ngIf="isLoading()">
+      <div class="spinner-sm"></div>
+      <p>正在訓練 LightGBM 模型並抓取營收、大戶、獲利指標...</p>
+    </div>
+  </ng-template>
+</div>

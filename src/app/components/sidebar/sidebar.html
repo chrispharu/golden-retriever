@@ -1,0 +1,83 @@
+<div class="market-grid-container">
+    <div class="market-toolbar">
+        <div class="search-input-wrapper">
+            <span class="icon">🔍</span>
+            <input type="text" [(ngModel)]="newStockSymbol" (ngModelChange)="onSearchInput($event)"
+                placeholder="輸入代碼或搜尋名稱..." (keyup.enter)="addStock()">
+
+            <ul class="autocomplete-dropdown" *ngIf="searchResults.length > 0">
+                <li *ngFor="let result of searchResults" (click)="selectSearchResult(result.symbol, result.name)">
+                    <span class="name">{{ result.name }}</span>
+                    <span class="sym">{{ result.symbol }}</span>
+                </li>
+            </ul>
+        </div>
+        <button class="btn-add-primary" (click)="addStock()">+ 加入清單</button>
+    </div>
+
+    <div class="cards-wrapper">
+        <div *ngFor="let stock of portfolio" class="stock-card card-base" 
+             [class.up]="stock.price > stock.prevClose" 
+             [class.down]="stock.price < stock.prevClose">
+            
+            <div class="card-main" (click)="openStockLink(stock.link)">
+                <div class="stock-header">
+                    <div class="name-block">
+                        <span class="name">{{ stock.name }}</span>
+                        <div class="symbol-row">
+                            <span class="symbol">{{ stock.symbol }}</span>
+                            <span class="market-tag" [class.is-open]="stock.marketStatus === 'OPEN'">{{ stock.marketStatus === 'OPEN' ? '盤中' : '休市' }}</span>
+                        </div>
+                    </div>
+                    <div class="price-block" [class.up]="stock.price > stock.prevClose" [class.down]="stock.price < stock.prevClose">
+                        <div class="price-main">
+                            {{ stock.price | number:'1.2-4' }}
+                        </div>
+                        <div class="price-change">
+                            {{ (stock.price - stock.prevClose) > 0 ? '▲' : '▼' }}
+                            {{ (stock.price - stock.prevClose) | number:'1.2-2' }}
+                            ({{ (stock.price - stock.prevClose) / stock.prevClose | percent:'1.2-2' }})
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <div class="action-btns">
+                    <button class="btn-action" (click)="toggleQuickAdd($event, stock)" [class.active]="quickAddSymbol === stock.symbol">➕ 庫存</button>
+                    <button class="btn-action" (click)="openChart(stock.symbol); $event.stopPropagation()">📊 詳情</button>
+                    <button class="btn-action" (click)="onRename(stock.symbol); $event.stopPropagation()">✎ 改名</button>
+                    <button class="btn-action btn-danger" (click)="onRemove(stock.symbol); $event.stopPropagation()">🗑 移除</button>
+                </div>
+            </div>
+
+            <!-- 快速庫存登錄迷你表單 -->
+            <div class="quick-add-panel" *ngIf="quickAddSymbol === stock.symbol" (click)="$event.stopPropagation()">
+                <div class="mini-form">
+                    <div class="row">
+                        <div class="form-field">
+                            <label>日期</label>
+                            <input type="date" [(ngModel)]="quickAddData.date" (ngModelChange)="fetchReferenceData()">
+                        </div>
+                        <div class="form-field">
+                            <label>價格</label>
+                            <input type="number" step="any" [(ngModel)]="quickAddData.price" [placeholder]="loadingRef ? '⌛' : '價格'">
+                        </div>
+                        <div class="form-field">
+                            <label>股數</label>
+                            <input type="number" step="any" [(ngModel)]="quickAddData.shares" placeholder="股數" #sharesInput>
+                        </div>
+                    </div>
+                    <button class="btn-submit" (click)="submitQuickAdd($event)" [disabled]="!quickAddData.shares">✅ 儲存庫存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [RESTORE] K 線圖彈窗 -->
+    <app-chart-modal 
+        [symbol]="chartSymbol" 
+        [isVisible]="isChartVisible" 
+        (closeEvent)="isChartVisible = false">
+    </app-chart-modal>
+</div>
