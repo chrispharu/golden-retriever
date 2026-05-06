@@ -16,6 +16,10 @@ public class StockQuoteDto {
     private BigDecimal prevClose; // 昨收
     private BigDecimal high; // 最高
     private BigDecimal low; // 最低
+    private BigDecimal fiftyTwoWeekHigh; // 52週最高
+    private BigDecimal fiftyTwoWeekLow; // 52週最低
+    private Long volume; // 今日成交量
+    private Long avgVolume; // 平均成交量
     private String currency; // 幣別
     private BigDecimal postMarketPrice; // 盤後價
     private String marketStatus; // 開/收盤狀態 (OPEN/CLOSED)

@@ -421,6 +421,10 @@ public class StockController {
             g.setPricePLTWD(pricePLTWD.setScale(0, RoundingMode.HALF_UP));
             g.setExchangePLTWD(exchangePLTWD.setScale(0, RoundingMode.HALF_UP));
             g.setHasValidRate(hasValidRate);
+            g.setFiftyTwoWeekHigh(mkt.getFiftyTwoWeekHigh());
+            g.setFiftyTwoWeekLow(mkt.getFiftyTwoWeekLow());
+            g.setVolume(mkt.getVolume());
+            g.setAvgVolume(mkt.getAvgVolume());
         }
 
         return groupedInvMap;
@@ -480,6 +484,10 @@ public class StockController {
                     .price(currentPrice).prevClose(mkt.getPrevClose())
                     .high(mkt.getHigh() != null ? mkt.getHigh() : BigDecimal.ZERO)
                     .low(mkt.getLow() != null ? mkt.getLow() : BigDecimal.ZERO)
+                    .fiftyTwoWeekHigh(mkt.getFiftyTwoWeekHigh())
+                    .fiftyTwoWeekLow(mkt.getFiftyTwoWeekLow())
+                    .volume(mkt.getVolume())
+                    .avgVolume(mkt.getAvgVolume())
                     .marketStatus(mkt.getMarketStatus()).postMarketPrice(mkt.getPostMarketPrice())
                     .rate(ratePrice).costTWD(costTWD).avgCost(avgCost).avgCostTWD(avgCostTWD)
                     .link(link).build());

@@ -44,6 +44,10 @@ public class DashboardResponseDto {
         private BigDecimal prevClose;
         private BigDecimal high;
         private BigDecimal low;
+        private BigDecimal fiftyTwoWeekHigh;
+        private BigDecimal fiftyTwoWeekLow;
+        private Long volume;
+        private Long avgVolume;
         private String marketStatus;
         private BigDecimal postMarketPrice;
         private BigDecimal rate;
@@ -83,5 +87,10 @@ public class DashboardResponseDto {
         private Double bias;      // 均線乖離率
         private Integer foreignBuy; // 外資買賣超(股)
         private Integer trustBuy;   // 投信買賣超(股)
+
+        private BigDecimal fiftyTwoWeekHigh;
+        private BigDecimal fiftyTwoWeekLow;
+        private Long volume;
+        private Long avgVolume;
     }
 }

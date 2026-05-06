@@ -224,6 +224,10 @@ public class YahooFinanceClient {
                                 .prevClose(new BigDecimal(q.path("regularMarketPreviousClose").asText("0")))
                                 .high(new BigDecimal(q.path("regularMarketDayHigh").asText(q.path("dayHigh").asText("0"))))
                                 .low(new BigDecimal(q.path("regularMarketDayLow").asText(q.path("dayLow").asText("0"))))
+                                .fiftyTwoWeekHigh(new BigDecimal(q.path("fiftyTwoWeekHigh").asText("0")))
+                                .fiftyTwoWeekLow(new BigDecimal(q.path("fiftyTwoWeekLow").asText("0")))
+                                .volume(q.path("regularMarketVolume").asLong(0))
+                                .avgVolume(q.path("averageDailyVolume10Day").asLong(0))
                                 .currency(q.path("currency").asText())
                                 .postMarketPrice(q.has("postMarketPrice") ? new BigDecimal(q.path("postMarketPrice").asText()) : null)
                                 .build();

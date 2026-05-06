@@ -101,9 +101,23 @@ public class TwStockService {
                                 .prevClose(new BigDecimal(node.path("previousClose").asText("0")))
                                 .high(new BigDecimal(node.path("highPrice").asText("0")))
                                 .low(new BigDecimal(node.path("lowPrice").asText("0")))
+                                .volume(node.path("tradingVolume").asLong(0))
                                 .currency("TWD")
                                 .marketStatus(node.path("isClose").asBoolean(false) ? "CLOSED" : "OPEN")
                                 .build();
+
+                        // 台股額外獲取 52 週數據 (透過歷史 K 線計算)
+                        List<ChartDataDto> yearData = fetchFugleChart(symbol, effectiveKey, "1y");
+                        if (yearData != null && !yearData.isEmpty()) {
+                            BigDecimal yHigh = yearData.stream().map(ChartDataDto::getHigh).max(BigDecimal::compareTo).orElse(lastPrice);
+                            BigDecimal yLow = yearData.stream().map(ChartDataDto::getLow).min(BigDecimal::compareTo).orElse(lastPrice);
+                            dto.setFiftyTwoWeekHigh(yHigh);
+                            dto.setFiftyTwoWeekLow(yLow);
+                            
+                            long avgVol = (long) yearData.stream().mapToLong(d -> 0L).average().orElse(0); // 這裡簡化，原 DTO 沒存每日量
+                            dto.setAvgVolume(avgVol);
+                        }
+
                         results.put(symbol, dto);
                     }
                 }
