@@ -53,6 +53,8 @@ export interface PortfolioItem {
   avgCost: number;
   avgCostTWD: number;
   link: string;
+  volStatus?: string; // NEW: Volume signal
+  range52w?: number;  // NEW: 0-100 position in 52w high/low
 }
 
 export interface InventoryRecord {
