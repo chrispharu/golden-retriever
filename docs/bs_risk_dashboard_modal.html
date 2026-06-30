@@ -1,0 +1,146 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.overlay{min-height:580px;background:rgba(0,0,0,0.4);display:flex;align-items:flex-start;justify-content:center;padding:16px;border-radius:var(--border-radius-lg)}
+.modal{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);width:100%;overflow:hidden}
+.mh{padding:14px 16px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;justify-content:space-between;align-items:center}
+.mt{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.ms{font-size:11px;color:var(--color-text-tertiary);margin-top:2px}
+.cb{font-size:13px;color:var(--color-text-tertiary);cursor:pointer;padding:4px 8px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);background:transparent}
+.mb{padding:14px 16px}
+.sl{font-size:11px;color:var(--color-text-tertiary);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;margin-top:14px}
+.sl:first-child{margin-top:0}
+.hv-row{display:flex;gap:6px;margin-bottom:8px}
+.hvp{flex:1;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px;text-align:center}
+.hvp .hl{font-size:10px;color:var(--color-text-tertiary);margin-bottom:3px}
+.hvp .hv{font-size:15px;font-weight:500}
+.c-hi{color:#A32D2D}
+.c-md{color:#854F0B}
+.c-lo{color:#3B6D11}
+.c-bl{color:#185FA5}
+.note{font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:12px 0}
+.vb{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.vr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.vr:last-child{border-bottom:none;padding-bottom:0}
+.vlb{font-size:12px;color:var(--color-text-secondary)}
+.vval{font-size:13px;font-weight:500;color:#A32D2D}
+.vpct{font-size:11px;color:var(--color-text-tertiary);margin-left:3px}
+.rb{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.rtrack{position:relative;height:6px;background:var(--color-border-tertiary);border-radius:3px;margin:10px 0 4px}
+.rzone{position:absolute;top:0;left:10%;right:10%;height:6px;border-radius:3px;background:#B5D4F4}
+.rdot{position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:#185FA5;border:2px solid var(--color-background-primary);left:58%}
+.rlabs{display:flex;justify-content:space-between;font-size:12px;font-weight:500}
+.rnow{text-align:center;font-size:11px;color:var(--color-text-tertiary);margin-top:4px}
+.pb{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.pr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.pr:last-child{border-bottom:none}
+.plb{font-size:12px;color:var(--color-text-secondary)}
+.pval{font-size:13px;font-weight:500}
+.ai-tag{font-size:10px;font-weight:500;color:#185FA5;margin-bottom:4px;margin-top:12px}
+.ai-box{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;font-size:12px;color:var(--color-text-secondary);line-height:1.6;border-left:3px solid #185FA5}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.abtn{padding:10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);font-size:12px;cursor:pointer;text-align:left;width:100%}
+.abtn .at{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+.abtn .as{font-size:10px;color:var(--color-text-tertiary);margin-top:3px}
+</style>
+
+<div class="overlay">
+  <div class="modal">
+    <div class="mh">
+      <div>
+        <div class="mt">台積電 2330.TW　風險儀表板</div>
+        <div class="ms">Black-Scholes 模型　· 2026/05/07 14:32</div>
+      </div>
+      <button class="cb">✕</button>
+    </div>
+
+    <div class="mb">
+
+      <div class="sl">① 歷史波動率 HV</div>
+      <div class="hv-row">
+        <div class="hvp"><div class="hl">20 日</div><div class="hv c-hi">42.1%</div></div>
+        <div class="hvp"><div class="hl">60 日</div><div class="hv c-md">35.8%</div></div>
+        <div class="hvp"><div class="hl">120 日</div><div class="hv c-lo">28.4%</div></div>
+      </div>
+      <div class="note">短期波動高於長期均值，近期市場較不穩定</div>
+
+      <div class="divider"></div>
+
+      <div class="sl">② VaR 風險值（1 張 · NT$1,025,500）</div>
+      <div class="vb">
+        <div class="vr">
+          <span class="vlb">單日 95% 信心區間</span>
+          <span><span class="vval">-NT$ 26,800</span><span class="vpct">(-2.61%)</span></span>
+        </div>
+        <div class="vr">
+          <span class="vlb">單日 99% 信心區間</span>
+          <span><span class="vval">-NT$ 38,200</span><span class="vpct">(-3.73%)</span></span>
+        </div>
+        <div class="vr">
+          <span class="vlb">週 95% 信心區間</span>
+          <span><span class="vval">-NT$ 59,900</span><span class="vpct">(-5.84%)</span></span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sl">③ BS 理論價格區間（30 天）</div>
+      <div class="rb">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--color-text-tertiary)">
+          <span>下軌 -1σ</span><span>現價</span><span>上軌 +1σ</span>
+        </div>
+        <div class="rtrack">
+          <div class="rzone"></div>
+          <div class="rdot"></div>
+        </div>
+        <div class="rlabs">
+          <span class="c-hi">934</span>
+          <span class="c-bl">1,025.5</span>
+          <span class="c-lo">1,118</span>
+        </div>
+        <div class="rnow">現價落在區間 58% 位置，偏中性略偏多</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sl">④ 風險調整後績效</div>
+      <div class="pb">
+        <div class="pr">
+          <span class="plb">夏普比率（年化）</span>
+          <span class="pval c-lo">1.42　優</span>
+        </div>
+        <div class="pr">
+          <span class="plb">最大回撤（120日）</span>
+          <span class="pval c-md">-14.3%</span>
+        </div>
+        <div class="pr">
+          <span class="plb">報酬 / 風險比</span>
+          <span class="pval c-lo">3.41</span>
+        </div>
+        <div class="pr">
+          <span class="plb">vs 加權指數</span>
+          <span class="pval c-lo">+6.2% 超額報酬</span>
+        </div>
+      </div>
+
+      <div class="ai-tag">AI 白話解讀</div>
+      <div class="ai-box">
+        台積電短線波動偏高（HV20 達 42%），持有 1 張情況下，明天有 5% 機率單日虧損超過 NT$26,800。BS 理論區間 934–1,118，現價偏中性位置。夏普比率 1.42 表現優良，但建議設停損參考線在 975 元（約 -5%）。
+      </div>
+
+      <div class="acts">
+        <button class="abtn" onclick="sendPrompt('針對台積電 VaR 風險幫我規劃停損策略')">
+          <div class="at">停損規劃 ↗</div>
+          <div class="as">根據 VaR 設定</div>
+        </button>
+        <button class="abtn" onclick="sendPrompt('台積電波動率偏高，我應該減碼還是持有？')">
+          <div class="at">波動率建議 ↗</div>
+          <div class="as">高波動應對策略</div>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

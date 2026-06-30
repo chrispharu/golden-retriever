@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-// 定義前端儀表板所需的複雜回應結構
 @Data
 @Builder
 public class DashboardResponseDto {
@@ -16,13 +15,14 @@ public class DashboardResponseDto {
     private GoldPriceDto gold;
     private Map<String, BenchmarkItem> benchmarks;
     private AllocationDto allocation;
+    private BigDecimal totalValueUsd; // 補回遺失欄位
 
     @Data
     @Builder
     public static class AllocationDto {
-        private Map<String, BigDecimal> byCurrency; // 幣別佔比 (TWD 總額)
-        private Map<String, BigDecimal> byAsset;    // 資產佔比 (標的總額)
-        private Map<String, BigDecimal> byType;     // 類型佔比 (TW vs US)
+        private Map<String, BigDecimal> byCurrency;
+        private Map<String, BigDecimal> byAsset;
+        private Map<String, BigDecimal> byType;
     }
 
     @Data
@@ -52,9 +52,17 @@ public class DashboardResponseDto {
         private BigDecimal postMarketPrice;
         private BigDecimal rate;
         private BigDecimal costTWD;
+        private BigDecimal marketValueTWD; // 補回遺失屬性
         private BigDecimal avgCost;
         private BigDecimal avgCostTWD;
         private String link;
+        private BigDecimal nav;
+        private Double premium;
+        private BigDecimal peRatio;
+        private BigDecimal dividendYield;
+        private BigDecimal pbRatio;
+        private Long foreignBuy;
+        private Long trustBuy;
     }
 
     @Data
@@ -80,17 +88,20 @@ public class DashboardResponseDto {
         private BigDecimal totalDividendsTWD;
         private boolean hasValidRate;
 
-        // [NEW] FinLab 量化數據整合
         private Double aiScore;
         private Double roe;
-        private Double pe;
-        private Double bias;      // 均線乖離率
-        private Integer foreignBuy; // 外資買賣超(股)
-        private Integer trustBuy;   // 投信買賣超(股)
+        private BigDecimal peRatio;
+        private BigDecimal dividendYield;
+        private BigDecimal pbRatio;
+        private Double bias;
+        private Long foreignBuy;
+        private Long trustBuy;
 
         private BigDecimal fiftyTwoWeekHigh;
         private BigDecimal fiftyTwoWeekLow;
         private Long volume;
         private Long avgVolume;
+        private BigDecimal nav;
+        private Double premium;
     }
 }

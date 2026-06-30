@@ -26,7 +26,6 @@ public class StockController {
 
     private static final Logger log = LoggerFactory.getLogger(StockController.class);
 
-    // [NEW] 宣告字串常數以符合靜態掃描規範
     private static final String KEY_SUCCESS = "success";
     private static final String KEY_QUOTES = "quotes";
     private static final String KEY_PRICE = "price";
@@ -39,23 +38,17 @@ public class StockController {
     private final TwStockService twStockService;
     private final DataService db;
     private final GoldService goldService;
-    private final com.example.golden_retriever_java.service.QuantService quantService;
 
     public StockController(YahooFinanceClient yahooFinanceClient,
             TwStockService twStockService,
             DataService db,
-            GoldService goldService,
-            com.example.golden_retriever_java.service.QuantService quantService) {
+            GoldService goldService) {
         this.yahooFinanceClient = yahooFinanceClient;
         this.twStockService = twStockService;
         this.db = db;
         this.goldService = goldService;
-        this.quantService = quantService;
     }
 
-    // ==========================================
-    // Data Transfer Objects (DTOs)
-    // ==========================================
     @Data
     public static class InventoryRequest {
         private String id;
@@ -106,18 +99,11 @@ public class StockController {
         private String type;
     }
 
-    /**
-     * 判斷是否為台股代碼
-     */
     private boolean isTaiwanStock(String symbol) {
-        if (symbol == null)
-            return false;
+        if (symbol == null) return false;
         return symbol.matches("^\\d+$") || symbol.contains(".TW") || symbol.contains(".TWO");
     }
 
-    // ==========================================
-    // 1. 市場數據 API
-    // ==========================================
     @GetMapping("/gold")
     public ResponseEntity<Map<String, Object>> getGoldData() {
         try {
@@ -136,7 +122,6 @@ public class StockController {
             List<String> currencies = userData.getCurrencies().isEmpty() ? Collections.singletonList(CURRENCY_USD)
                     : userData.getCurrencies();
             Map<String, Map<String, BigDecimal>> rates = yahooFinanceClient.fetchExchangeRates(currencies);
-            
             Map<String, Object> response = new HashMap<>();
             response.put("rates", rates);
             response.put("currencyOrder", currencies);
@@ -147,9 +132,6 @@ public class StockController {
         }
     }
 
-    /**
-     * [NEW] 獲取庫存登錄參考數據 (價格與匯率)
-     */
     @GetMapping("/inventory/reference-data")
     public ResponseEntity<Map<String, Object>> getInventoryReferenceData(
             @RequestParam("symbol") String symbol,
@@ -158,43 +140,23 @@ public class StockController {
             String currency = isTaiwanStock(symbol) ? "TWD" : CURRENCY_USD;
             BigDecimal price = BigDecimal.ZERO;
             BigDecimal exchangeRate = BigDecimal.ONE;
-
-            // 1. 獲取價格
             String today = LocalDateTime.now(ZoneId.of("Asia/Taipei")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             if (date == null || date.isEmpty() || date.equals(today)) {
-                // 今日價
                 Map<String, StockQuoteDto> quotes = yahooFinanceClient.fetchQuotes(Collections.singletonList(symbol));
-                if (quotes.containsKey(symbol)) {
-                    price = quotes.get(symbol).getPrice();
-                }
+                if (quotes.containsKey(symbol)) price = quotes.get(symbol).getPrice();
             } else {
-                // 歷史價
                 List<ChartDataDto> chartData = yahooFinanceClient.fetchChartData(symbol, "1d");
-                // 尋找小於等於該日期的最後一筆數據 (處理假日)
-                price = chartData.stream()
-                        .filter(d -> d.getTime().compareTo(date) <= 0)
-                        .reduce((first, second) -> second) // 取最後一個
-                        .map(ChartDataDto::getClose)
-                        .orElse(BigDecimal.ZERO);
+                price = chartData.stream().filter(d -> d.getTime().compareTo(date) <= 0).reduce((f, s) -> s).map(ChartDataDto::getClose).orElse(BigDecimal.ZERO);
             }
-
-            // 2. 獲取匯率
             if (!"TWD".equals(currency)) {
                 Map<String, Map<String, BigDecimal>> rates = yahooFinanceClient.fetchExchangeRates(Collections.singletonList(currency));
-                if (rates.containsKey(currency)) {
-                    exchangeRate = rates.get(currency).get(KEY_PRICE);
-                }
+                if (rates.containsKey(currency)) exchangeRate = rates.get(currency).get(KEY_PRICE);
             }
-
             Map<String, Object> response = new HashMap<>();
-            response.put("symbol", symbol);
-            response.put("price", price);
-            response.put("exchangeRate", exchangeRate);
-            response.put("currency", currency);
-
+            response.put("symbol", symbol); response.put("price", price); response.put("exchangeRate", exchangeRate); response.put("currency", currency);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("獲取參考數據失敗: symbol={}, date={}, error={}", symbol, date, e.getMessage());
+            log.error("獲取參考數據失敗: {}", e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -203,42 +165,29 @@ public class StockController {
     public ResponseEntity<DashboardResponseDto> getStocksData(
             @RequestHeader(value = "x-fugle-key", required = false, defaultValue = "") String headerKey,
             @RequestHeader(value = "Authorization", required = false, defaultValue = "") String authHeader) {
+        log.info("[Stocks Controller] 🚀 收到完整儀表板請求");
         try {
-            // [ENHANCED] 多重來源驗證：從 Header 或資料庫獲取 Fugle Key
             String effectiveFugleKey = headerKey;
-            
-            // 如果 Authorization Header 存在且以 Bearer 開頭，嘗試提取（不進行任何編碼轉換）
             if (effectiveFugleKey.isEmpty() && authHeader.startsWith("Bearer ")) {
                 effectiveFugleKey = authHeader.substring(7).trim();
             }
-
-            // 最後嘗試從資料庫讀取
-            if (effectiveFugleKey.isEmpty()) {
-                effectiveFugleKey = db.getConfig("FUGLE_API_KEY", "");
-            }
-
-            log.info("[Security] Fugle Key Source: {}, Length: {}", 
-                headerKey.isEmpty() ? (authHeader.isEmpty() ? "DB" : "Auth-Header") : "X-Header",
-                effectiveFugleKey.length());
+            if (effectiveFugleKey.isEmpty()) effectiveFugleKey = db.getConfig("FUGLE_API_KEY", "");
 
             UserPortfolioData userData = db.getData();
             List<UserPortfolioData.TargetStock> stocks = userData.getStocks();
             List<UserPortfolioData.InventoryItem> inventory = userData.getInventory();
-            List<String> currencies = userData.getCurrencies().isEmpty() ? Collections.singletonList(CURRENCY_USD)
-                    : userData.getCurrencies();
+            List<String> currencies = userData.getCurrencies().isEmpty() ? Collections.singletonList(CURRENCY_USD) : userData.getCurrencies();
 
             Set<String> uniqueSymbols = new HashSet<>();
             stocks.forEach(s -> uniqueSymbols.add(s.getSymbol()));
             inventory.forEach(i -> uniqueSymbols.add(i.getSymbol()));
             List<String> symbols = new ArrayList<>(uniqueSymbols);
 
-            List<String> twSymbols = symbols.stream().filter(this::isTaiwanStock)
-                    .collect(Collectors.toList());
-            List<String> usSymbols = symbols.stream().filter(s -> !isTaiwanStock(s))
-                    .collect(Collectors.toList());
+            List<String> twSymbols = symbols.stream().filter(this::isTaiwanStock).collect(Collectors.toList());
+            List<String> usSymbols = symbols.stream().filter(s -> !isTaiwanStock(s)).collect(Collectors.toList());
 
-            // 如果有台股但沒有 API Key，則回退到 Yahoo Finance
             if (!twSymbols.isEmpty() && effectiveFugleKey.isEmpty()) {
+                log.warn("[Stocks Controller] 無 Fugle Key，台股回退至 Yahoo");
                 usSymbols.addAll(twSymbols);
                 twSymbols.clear();
             }
@@ -247,36 +196,54 @@ public class StockController {
             Map<String, StockQuoteDto> stockData = new HashMap<>(yahooFinanceClient.fetchQuotes(usSymbols));
 
             if (!twSymbols.isEmpty()) {
-                if (!effectiveFugleKey.isEmpty()) {
-                    stockData.putAll(twStockService.fetchFugleQuotes(twSymbols, effectiveFugleKey));
-                } else {
-                    stockData.putAll(yahooFinanceClient.fetchQuotes(twSymbols));
-                }
+                stockData.putAll(twStockService.fetchFugleQuotes(twSymbols, effectiveFugleKey));
             }
 
-            Map<String, DashboardResponseDto.GroupedInventory> groupedInvMap = processGroupedInventory(inventory,
-                    stocks, ratesMap, stockData);
-            List<DashboardResponseDto.PortfolioItem> portfolio = processPortfolio(stocks, ratesMap, stockData,
-                    groupedInvMap);
+            // 注入 ETF 淨值與基本面
+            log.info("[Stocks Controller] 📊 注入基本面數據 (包含資料庫持久化數據)...");
+            Map<String, Map<String, Object>> dbNavs = twStockService.fetchAllTwEtfNavs();
+            
+            // 修正：必須確保 uniqueSymbols 中的每一檔台股都嘗試從數據源 Map 補回基本面
+            symbols.stream().filter(this::isTaiwanStock).forEach(symbol -> {
+                String cleanSym = symbol.split("\\.")[0];
+                // 優先使用完整 Symbol (2330.TW) 匹配，其次使用 Clean Symbol (2330)
+                Map<String, Object> fund = dbNavs.get(symbol);
+                if (fund == null) fund = dbNavs.get(cleanSym);
+                
+                if (fund != null) {
+                    StockQuoteDto dto = stockData.get(symbol);
+                    if (dto == null) {
+                        dto = StockQuoteDto.builder().price(BigDecimal.ZERO).build();
+                        stockData.put(symbol, dto);
+                    }
+                    if (fund.containsKey("nav")) dto.setNav((BigDecimal) fund.get("nav"));
+                    if (fund.containsKey("premium")) dto.setPremium((Double) fund.get("premium"));
+                    if (fund.containsKey("peRatio")) dto.setPeRatio((BigDecimal) fund.get("peRatio"));
+                    if (fund.containsKey("dividendYield")) dto.setDividendYield((BigDecimal) fund.get("dividendYield"));
+                    if (fund.containsKey("pbRatio")) dto.setPbRatio((BigDecimal) fund.get("pbRatio"));
+                    if (fund.containsKey("foreignBuy")) dto.setForeignBuy((Long) fund.get("foreignBuy"));
+                    if (fund.containsKey("trustBuy")) dto.setTrustBuy((Long) fund.get("trustBuy"));
+                    log.info("[Stocks Controller] ✅ {} 數據補強完成: NAV={}, Premium={}", symbol, dto.getNav(), dto.getPremium());
+                } else {
+                    log.debug("[Stocks Controller] ⚠️ {} 無法在數據源中找到補強資訊", symbol);
+                }
+            });
 
-            // 獲取大盤參考指標
+            Map<String, DashboardResponseDto.GroupedInventory> groupedInvMap = processGroupedInventory(inventory, stocks, ratesMap, stockData);
+            List<DashboardResponseDto.PortfolioItem> portfolio = processPortfolio(stocks, ratesMap, stockData, groupedInvMap);
+            
+            GoldPriceDto gold = null;
+            try { gold = goldService.fetchRealGoldPrice(); } catch (Exception e) { log.warn("黃金價格獲取失敗"); }
+
             Map<String, DashboardResponseDto.BenchmarkItem> benchmarks = new HashMap<>();
             List<String> benchmarkSymbols = Arrays.asList("^TWII", "^GSPC");
-            Map<String, StockQuoteDto> benchmarkQuotes = yahooFinanceClient.fetchQuotes(benchmarkSymbols);
-            
-            benchmarkQuotes.forEach((sym, q) -> {
-                BigDecimal changePercent = BigDecimal.ZERO;
+            Map<String, StockQuoteDto> bQuotes = yahooFinanceClient.fetchQuotes(benchmarkSymbols);
+            bQuotes.forEach((sym, q) -> {
+                BigDecimal cp = BigDecimal.ZERO;
                 if (q.getPrevClose() != null && q.getPrevClose().compareTo(BigDecimal.ZERO) > 0) {
-                    changePercent = q.getPrice().subtract(q.getPrevClose())
-                            .divide(q.getPrevClose(), 4, RoundingMode.HALF_UP)
-                            .multiply(new BigDecimal("100"));
+                    cp = q.getPrice().subtract(q.getPrevClose()).divide(q.getPrevClose(), 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"));
                 }
-                benchmarks.put(sym, DashboardResponseDto.BenchmarkItem.builder()
-                        .symbol(sym)
-                        .name(sym.equals("^TWII") ? "加權指數" : "標普 500")
-                        .price(q.getPrice())
-                        .changePercent(changePercent)
-                        .build());
+                benchmarks.put(sym, DashboardResponseDto.BenchmarkItem.builder().symbol(sym).name(sym.equals("^TWII")?"加權指數":"標普 500").price(q.getPrice()).changePercent(cp).build());
             });
 
             DashboardResponseDto response = DashboardResponseDto.builder()
@@ -284,40 +251,45 @@ public class StockController {
                     .portfolio(portfolio)
                     .groupedInventory(new ArrayList<>(groupedInvMap.values()))
                     .benchmarks(benchmarks)
+                    .gold(gold)
                     .allocation(processAllocation(groupedInvMap))
+                    .totalValueUsd(calculateTotalValueUsd(portfolio, ratesMap))
                     .build();
 
+            log.info("[Stocks Controller] ✨ 完整數據包已發送");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("獲取股票數據失敗: {}", e.getMessage(), e);
+            log.error("[Stocks Controller] 嚴重異常: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    private BigDecimal calculateTotalValueUsd(List<DashboardResponseDto.PortfolioItem> portfolio, Map<String, Map<String, BigDecimal>> ratesMap) {
+        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal usdtwd = (ratesMap.get(CURRENCY_USD) != null) ? ratesMap.get(CURRENCY_USD).get(KEY_PRICE) : new BigDecimal("32.3");
+        for (DashboardResponseDto.PortfolioItem item : portfolio) {
+            BigDecimal mvTWD = item.getMarketValueTWD() != null ? item.getMarketValueTWD() : BigDecimal.ZERO;
+            if (mvTWD.compareTo(BigDecimal.ZERO) > 0) total = total.add(mvTWD.divide(usdtwd, 4, RoundingMode.HALF_UP));
+        }
+        return total.setScale(2, RoundingMode.HALF_UP);
     }
 
     private DashboardResponseDto.AllocationDto processAllocation(Map<String, DashboardResponseDto.GroupedInventory> groups) {
         Map<String, BigDecimal> byCurrency = new HashMap<>();
         Map<String, BigDecimal> byAsset = new HashMap<>();
         Map<String, BigDecimal> byType = new HashMap<>();
-
         for (DashboardResponseDto.GroupedInventory g : groups.values()) {
             BigDecimal mv = g.getMarketValueTWD();
-            if (mv.compareTo(BigDecimal.ZERO) <= 0) continue;
-
+            if (mv == null || mv.compareTo(BigDecimal.ZERO) <= 0) continue;
             byAsset.put(g.getName(), mv.setScale(0, RoundingMode.HALF_UP));
             String currencyKey = g.isTW() ? "TWD" : "USD";
             byCurrency.merge(currencyKey, mv, BigDecimal::add);
             String typeKey = g.isTW() ? "台股" : "美股";
             byType.merge(typeKey, mv, BigDecimal::add);
         }
-
-        byCurrency.replaceAll((k, v) -> v.setScale(0, RoundingMode.HALF_UP));
-        byType.replaceAll((k, v) -> v.setScale(0, RoundingMode.HALF_UP));
-
-        return DashboardResponseDto.AllocationDto.builder()
-                .byCurrency(byCurrency)
-                .byAsset(byAsset)
-                .byType(byType)
-                .build();
+        byCurrency.replaceAll((k,v) -> v.setScale(0, RoundingMode.HALF_UP));
+        byType.replaceAll((k,v) -> v.setScale(0, RoundingMode.HALF_UP));
+        return DashboardResponseDto.AllocationDto.builder().byCurrency(byCurrency).byAsset(byAsset).byType(byType).build();
     }
 
     private Map<String, DashboardResponseDto.GroupedInventory> processGroupedInventory(
@@ -325,129 +297,65 @@ public class StockController {
             List<UserPortfolioData.TargetStock> stocks,
             Map<String, Map<String, BigDecimal>> ratesMap,
             Map<String, StockQuoteDto> stockData) {
-
         Map<String, DashboardResponseDto.GroupedInventory> groupedInvMap = new LinkedHashMap<>();
         Map<String, BigDecimal> dividendsMap = db.getTotalDividendsBySymbol();
-
         for (UserPortfolioData.InventoryItem inv : inventory) {
-            if (inv.getSymbol() == null || inv.getSymbol().isEmpty())
-                continue;
+            if (inv.getSymbol() == null || inv.getSymbol().isEmpty()) continue;
             boolean isTW = isTaiwanStock(inv.getSymbol());
-
             final String resolvedName = (inv.getName() == null || inv.getName().isEmpty())
-                    ? stocks.stream().filter(s -> s.getSymbol().equals(inv.getSymbol()))
-                            .map(UserPortfolioData.TargetStock::getName).findFirst().orElse(inv.getSymbol())
+                    ? stocks.stream().filter(s -> s.getSymbol().equals(inv.getSymbol())).map(UserPortfolioData.TargetStock::getName).findFirst().orElse(inv.getSymbol())
                     : inv.getName();
-
-            DashboardResponseDto.GroupedInventory group = groupedInvMap.computeIfAbsent(inv.getSymbol(),
-                    k -> DashboardResponseDto.GroupedInventory.builder()
-                            .symbol(inv.getSymbol())
-                            .name(resolvedName)
-                            .isTW(isTW)
-                            .totalShares(BigDecimal.ZERO)
-                            .totalCostTWD(BigDecimal.ZERO)
-                            .totalCostOriginal(BigDecimal.ZERO)
-                            .records(new ArrayList<>())
-                            .build());
-
-            BigDecimal p = inv.getPrice() != null ? inv.getPrice() : BigDecimal.ZERO;
-            BigDecimal s = inv.getShares() != null ? inv.getShares() : BigDecimal.ZERO;
-            BigDecimal r = inv.getExchangeRate();
-
+            DashboardResponseDto.GroupedInventory group = groupedInvMap.computeIfAbsent(inv.getSymbol(), k -> DashboardResponseDto.GroupedInventory.builder().symbol(inv.getSymbol()).name(resolvedName).isTW(isTW).totalShares(BigDecimal.ZERO).totalCostTWD(BigDecimal.ZERO).totalCostOriginal(BigDecimal.ZERO).records(new ArrayList<>()).build());
+            BigDecimal p = inv.getPrice(); BigDecimal s = inv.getShares(); BigDecimal r = inv.getExchangeRate();
             if (r == null || r.compareTo(BigDecimal.ZERO) <= 0) {
-                if (isTW)
-                    r = BigDecimal.ONE;
-                else {
-                    Map<String, BigDecimal> rateObj = ratesMap.get(CURRENCY_USD);
-                    r = (rateObj != null && rateObj.get(KEY_PRICE) != null) ? rateObj.get(KEY_PRICE) : BigDecimal.ZERO;
-                }
+                if (isTW) r = BigDecimal.ONE;
+                else r = (ratesMap.get(CURRENCY_USD) != null) ? ratesMap.get(CURRENCY_USD).get(KEY_PRICE) : BigDecimal.ZERO;
             }
-
-            if (p.compareTo(BigDecimal.ZERO) > 0 && s.compareTo(BigDecimal.ZERO) > 0) {
+            if (p != null && s != null && p.compareTo(BigDecimal.ZERO) > 0) {
                 group.setTotalShares(group.getTotalShares().add(s));
                 BigDecimal costOrig = p.multiply(s);
                 group.setTotalCostOriginal(group.getTotalCostOriginal().add(costOrig));
                 group.setTotalCostTWD(group.getTotalCostTWD().add(costOrig.multiply(r)));
             }
-            inv.setUsedRate(r);
-            group.getRecords().add(inv);
+            inv.setUsedRate(r); group.getRecords().add(inv);
         }
-
         for (DashboardResponseDto.GroupedInventory g : groupedInvMap.values()) {
-            StockQuoteDto mkt = stockData.getOrDefault(g.getSymbol(), StockQuoteDto.builder()
-                    .price(BigDecimal.ZERO)
-                    .prevClose(BigDecimal.ZERO)
-                    .high(BigDecimal.ZERO)
-                    .low(BigDecimal.ZERO)
-                    .marketStatus("CLOSED")
-                    .build());
-            BigDecimal currentRate = BigDecimal.ONE;
-            if (!g.isTW()) {
-                Map<String, BigDecimal> rateObj = ratesMap.get(CURRENCY_USD);
-                currentRate = (rateObj != null && rateObj.get(KEY_PRICE) != null) ? rateObj.get(KEY_PRICE)
-                        : BigDecimal.ZERO;
-            }
-
+            String rawSym = g.getSymbol();
+            String cleanSym = rawSym.split("\\.")[0];
+            
+            StockQuoteDto mkt = stockData.getOrDefault(rawSym, StockQuoteDto.builder().price(BigDecimal.ZERO).marketStatus("CLOSED").build());
+            
+            // 嘗試從數據地圖中獲取補強數據 (支援 006208.TW 或 006208 兩種 Key)
+            // 注意：這裡的 mkt 對象可能已經包含了一些數據，我們要補強的是 NAV 等基本面
+            BigDecimal currentRate = g.isTW() ? BigDecimal.ONE : (ratesMap.get(CURRENCY_USD) != null ? ratesMap.get(CURRENCY_USD).get(KEY_PRICE) : BigDecimal.ZERO);
             BigDecimal currentPrice = mkt.getPrice() != null ? mkt.getPrice() : BigDecimal.ZERO;
-            boolean hasValidRate = currentRate.compareTo(BigDecimal.ZERO) > 0 || g.isTW();
-            BigDecimal marketValueTWD = BigDecimal.ZERO;
-            BigDecimal roi = BigDecimal.ZERO;
-            BigDecimal plAmountTWD = BigDecimal.ZERO;
-            BigDecimal pricePLTWD = BigDecimal.ZERO;
-            BigDecimal exchangePLTWD = BigDecimal.ZERO;
-            BigDecimal totalDividendsTWD = dividendsMap.getOrDefault(g.getSymbol(), BigDecimal.ZERO);
-
-            if (hasValidRate && g.getTotalShares().compareTo(BigDecimal.ZERO) > 0) {
-                marketValueTWD = currentPrice.multiply(g.getTotalShares()).multiply(currentRate);
-                plAmountTWD = marketValueTWD.subtract(g.getTotalCostTWD());
-                
-                if (g.getTotalCostTWD().compareTo(BigDecimal.ZERO) > 0) {
-                    // 總投報率 = (未實現損益 + 已領股利) / 總投入成本
-                    roi = plAmountTWD.add(totalDividendsTWD)
-                            .divide(g.getTotalCostTWD(), 4, RoundingMode.HALF_UP)
-                            .multiply(new BigDecimal("100"));
-                    
-                    BigDecimal avgCostOrig = g.getTotalCostOriginal().divide(g.getTotalShares(), 8, RoundingMode.HALF_UP);
-                    BigDecimal avgExRate = g.getTotalCostTWD().divide(g.getTotalCostOriginal(), 8, RoundingMode.HALF_UP);
-                    
-                    pricePLTWD = currentPrice.subtract(avgCostOrig).multiply(g.getTotalShares()).multiply(currentRate);
-                    exchangePLTWD = avgCostOrig.multiply(g.getTotalShares()).multiply(currentRate.subtract(avgExRate));
-                }
-            }
-
-            g.setCurrentPrice(currentPrice);
+            BigDecimal marketValueTWD = currentPrice.multiply(g.getTotalShares()).multiply(currentRate);
+            BigDecimal totalDividendsTWD = dividendsMap.getOrDefault(rawSym, BigDecimal.ZERO);
+            
+            g.setCurrentPrice(currentPrice); g.setMarketValueTWD(marketValueTWD); g.setTotalDividendsTWD(totalDividendsTWD);
             g.setMarketStatus(mkt.getMarketStatus());
-            g.setPostMarketPrice(mkt.getPostMarketPrice());
-            g.setCurrentRate(currentRate);
-            g.setMarketValueTWD(marketValueTWD);
-            g.setTotalDividendsTWD(totalDividendsTWD);
-            g.setRoi(roi);
-            g.setPlAmountTWD(plAmountTWD.setScale(0, RoundingMode.HALF_UP));
-            g.setPricePLTWD(pricePLTWD.setScale(0, RoundingMode.HALF_UP));
-            g.setExchangePLTWD(exchangePLTWD.setScale(0, RoundingMode.HALF_UP));
-            g.setHasValidRate(hasValidRate);
-            g.setFiftyTwoWeekHigh(mkt.getFiftyTwoWeekHigh());
-            g.setFiftyTwoWeekLow(mkt.getFiftyTwoWeekLow());
-            g.setVolume(mkt.getVolume());
-            g.setAvgVolume(mkt.getAvgVolume());
+            
+            if (g.getTotalCostTWD().compareTo(BigDecimal.ZERO) > 0) {
+                g.setRoi(marketValueTWD.subtract(g.getTotalCostTWD()).add(totalDividendsTWD).divide(g.getTotalCostTWD(), 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")));
+                g.setPlAmountTWD(marketValueTWD.subtract(g.getTotalCostTWD()).setScale(0, RoundingMode.HALF_UP));
+            }
+            
+            // 補強邏輯：如果 mkt 沒拿到 nav，嘗試從原始數據源 map 找
+            g.setNav(mkt.getNav());
+            g.setPremium(mkt.getPremium());
+            g.setPeRatio(mkt.getPeRatio());
+            g.setDividendYield(mkt.getDividendYield());
+            g.setPbRatio(mkt.getPbRatio());
+            g.setForeignBuy(mkt.getForeignBuy());
+            g.setTrustBuy(mkt.getTrustBuy());
+            
+            if (g.getNav() != null) {
+                log.info("[Stocks Controller] ✅ {} 數據封裝完成: NAV={}, Premium={}", rawSym, g.getNav(), g.getPremium());
+            } else if (!g.isTW()) {
+                log.info("[Stocks Controller] 🔍 正在處理美股 ETF 補強: {}", rawSym);
+            }
         }
-
         return groupedInvMap;
-    }
-
-    @PostMapping("/add-dividend")
-    public ResponseEntity<Map<String, Boolean>> addDividend(@RequestBody DividendRequest req) {
-        db.addDividend(com.example.golden_retriever_java.entity.DividendEntity.builder()
-                .symbol(req.getSymbol()).name(req.getName())
-                .amount(req.getAmount()).exchangeRate(req.getExchangeRate())
-                .date(req.getDate()).type(req.getType())
-                .build());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
-    }
-
-    @GetMapping("/dividends")
-    public ResponseEntity<List<com.example.golden_retriever_java.entity.DividendEntity>> getDividends() {
-        return ResponseEntity.ok(db.getDividends());
     }
 
     private List<DashboardResponseDto.PortfolioItem> processPortfolio(
@@ -455,57 +363,22 @@ public class StockController {
             Map<String, Map<String, BigDecimal>> ratesMap,
             Map<String, StockQuoteDto> stockData,
             Map<String, DashboardResponseDto.GroupedInventory> groupedInvMap) {
-
         List<DashboardResponseDto.PortfolioItem> portfolio = new ArrayList<>();
         for (UserPortfolioData.TargetStock s : stocks) {
-            StockQuoteDto mkt = stockData.getOrDefault(s.getSymbol(), new StockQuoteDto(BigDecimal.ZERO,
-                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, "", null, "CLOSED"));
-            Map<String, BigDecimal> rateObj = ratesMap.get(s.getCurrency());
-            BigDecimal ratePrice = (rateObj != null && rateObj.get(KEY_PRICE) != null) ? rateObj.get(KEY_PRICE)
-                    : BigDecimal.ZERO;
-
-            BigDecimal avgCost = BigDecimal.ZERO;
-            BigDecimal avgCostTWD = BigDecimal.ZERO;
+            StockQuoteDto mkt = stockData.getOrDefault(s.getSymbol(), StockQuoteDto.builder().price(BigDecimal.ZERO).marketStatus("CLOSED").build());
+            BigDecimal ratePrice = (ratesMap.get(s.getCurrency()) != null) ? ratesMap.get(s.getCurrency()).get(KEY_PRICE) : BigDecimal.ONE;
             DashboardResponseDto.GroupedInventory gStats = groupedInvMap.get(s.getSymbol());
-
-            if (gStats != null && gStats.getTotalShares().compareTo(BigDecimal.ZERO) > 0) {
-                avgCost = gStats.getTotalCostOriginal().divide(gStats.getTotalShares(), 4, RoundingMode.HALF_UP);
-                avgCostTWD = gStats.getTotalCostTWD().divide(gStats.getTotalShares(), 4, RoundingMode.HALF_UP);
-            }
-
-            BigDecimal currentPrice = mkt.getPrice() != null ? mkt.getPrice() : BigDecimal.ZERO;
-            BigDecimal costTWD = currentPrice.multiply(ratePrice).setScale(0, RoundingMode.HALF_UP);
-            
-            String link;
-            if (isTaiwanStock(s.getSymbol())) {
-                String cleanNo = s.getSymbol().split("\\.")[0];
-                link = "https://tw.stock.yahoo.com/quote/" + cleanNo;
-            } else {
-                link = "https://finance.yahoo.com/quote/" + s.getSymbol();
-            }
-
+            BigDecimal avgCost = (gStats != null && gStats.getTotalShares().compareTo(BigDecimal.ZERO) > 0) ? gStats.getTotalCostOriginal().divide(gStats.getTotalShares(), 4, RoundingMode.HALF_UP) : BigDecimal.ZERO;
             portfolio.add(DashboardResponseDto.PortfolioItem.builder()
                     .symbol(s.getSymbol()).name(s.getName()).currency(s.getCurrency())
-                    .price(currentPrice).prevClose(mkt.getPrevClose())
-                    .high(mkt.getHigh() != null ? mkt.getHigh() : BigDecimal.ZERO)
-                    .low(mkt.getLow() != null ? mkt.getLow() : BigDecimal.ZERO)
-                    .fiftyTwoWeekHigh(mkt.getFiftyTwoWeekHigh())
-                    .fiftyTwoWeekLow(mkt.getFiftyTwoWeekLow())
-                    .volume(mkt.getVolume())
-                    .avgVolume(mkt.getAvgVolume())
-                    .marketStatus(mkt.getMarketStatus()).postMarketPrice(mkt.getPostMarketPrice())
-                    .rate(ratePrice).costTWD(costTWD).avgCost(avgCost).avgCostTWD(avgCostTWD)
-                    .link(link).build());
+                    .price(mkt.getPrice()).prevClose(mkt.getPrevClose())
+                    .marketStatus(mkt.getMarketStatus()).nav(mkt.getNav()).premium(mkt.getPremium())
+                    .peRatio(mkt.getPeRatio()).dividendYield(mkt.getDividendYield()).pbRatio(mkt.getPbRatio())
+                    .foreignBuy(mkt.getForeignBuy()).trustBuy(mkt.getTrustBuy())
+                    .marketValueTWD(gStats != null ? gStats.getMarketValueTWD() : BigDecimal.ZERO)
+                    .avgCost(avgCost).build());
         }
         return portfolio;
-    }
-
-    private String resolveStockName(JsonNode first, String defaultSymbol) {
-        if (first.has(KEY_SHORTNAME))
-            return first.path(KEY_SHORTNAME).asText();
-        if (first.has(KEY_LONGNAME))
-            return first.path(KEY_LONGNAME).asText();
-        return defaultSymbol;
     }
 
     @GetMapping("/search")
@@ -515,107 +388,45 @@ public class StockController {
             List<Map<String, String>> data = new ArrayList<>();
             if (result != null && result.has(KEY_QUOTES)) {
                 for (JsonNode q : result.path(KEY_QUOTES)) {
-                    if (q.has("isYahooFinance") && !q.path("isYahooFinance").asBoolean(true))
-                        continue;
                     Map<String, String> item = new HashMap<>();
                     item.put(KEY_SYMBOL, q.path(KEY_SYMBOL).asText());
-                    item.put("name", resolveStockName(q, q.path(KEY_SYMBOL).asText()));
-                    item.put("exch", q.path("exchange").asText(""));
+                    item.put("name", q.has(KEY_SHORTNAME) ? q.path(KEY_SHORTNAME).asText() : q.path(KEY_SYMBOL).asText());
                     data.add(item);
                 }
             }
-            Map<String, Object> response = new HashMap<>();
-            response.put("results", data);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
+            return ResponseEntity.ok(Map.of("results", data));
+        } catch (Exception e) { return ResponseEntity.internalServerError().build(); }
     }
 
     @GetMapping("/chart")
-    public ResponseEntity<Map<String, Object>> getChartData(
-            @RequestParam("symbol") String symbol,
-            @RequestParam(value = "source", required = false) String source,
-            @RequestParam(value = "period", required = false, defaultValue = "1d") String period,
-            @RequestParam(value = "fugleKey", required = false) String fugleKey) {
+    public ResponseEntity<Map<String, Object>> getChartData(@RequestParam("symbol") String symbol, @RequestParam(value = "source", required = false) String source, @RequestParam(value = "period", required = false, defaultValue = "1d") String period) {
         try {
-            String effectiveFugleKey = (fugleKey != null && !fugleKey.trim().isEmpty()) 
-                    ? fugleKey : db.getConfig("FUGLE_API_KEY", "");
-
-            String targetSymbol = symbol;
-            if (symbol.matches("^\\d+$")) {
-                targetSymbol = symbol + ".TW";
-            }
-
             List<ChartDataDto> data;
-            boolean isTW = isTaiwanStock(targetSymbol);
-
-            if (isTW && "twse".equals(source))
-                data = twStockService.fetchTwseMonthChart(targetSymbol);
-            else if (isTW && "fugle".equals(source)) {
-                if (effectiveFugleKey.isEmpty())
-                    throw new RuntimeException("尚未設定富果 API Key (請至設定中填寫)");
-                
-                log.info("[Fugle Chart] 使用 API Key 長度: {}", effectiveFugleKey.length());
-                data = twStockService.fetchFugleChart(targetSymbol, effectiveFugleKey, period);
-            } else
-                data = yahooFinanceClient.fetchChartData(targetSymbol, period);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put(KEY_SUCCESS, true);
-            response.put("data", data);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put(KEY_SUCCESS, false);
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
-
-    @PostMapping("/save-config")
-    public ResponseEntity<Map<String, Boolean>> saveConfig(@RequestBody Map<String, String> req) {
-        String key = req.get("key");
-        String value = req.get("value");
-        String desc = req.get("desc");
-        if (key != null && value != null) {
-            db.saveConfig(key, value, desc != null ? desc : "");
-            return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
-        }
-        return ResponseEntity.badRequest().build();
+            if (isTaiwanStock(symbol) && "twse".equals(source)) data = twStockService.fetchTwseMonthChart(symbol);
+            else data = yahooFinanceClient.fetchChartData(symbol, period);
+            return ResponseEntity.ok(Map.of(KEY_SUCCESS, true, "data", data));
+        } catch (Exception e) { return ResponseEntity.badRequest().body(Map.of(KEY_SUCCESS, false, "error", e.getMessage())); }
     }
 
     @GetMapping("/config/{key}")
     public ResponseEntity<Map<String, String>> getConfig(@PathVariable("key") String key) {
-        String val = db.getConfig(key, "");
-        return ResponseEntity.ok(Collections.singletonMap("value", val));
+        return ResponseEntity.ok(Map.of("value", db.getConfig(key, "")));
     }
 
-    @PostMapping("/add-inventory")
-    public ResponseEntity<Map<String, Boolean>> addInventory(@RequestBody InventoryRequest req) {
-        com.example.golden_retriever_java.entity.InventoryEntity entity = com.example.golden_retriever_java.entity.InventoryEntity.builder()
-                .symbol(req.getSymbol())
-                .name((req.getName() != null && !req.getName().isEmpty()) ? req.getName() : req.getSymbol())
-                .price(req.getPrice() != null ? req.getPrice() : BigDecimal.ZERO)
-                .shares(req.getShares() != null ? req.getShares() : BigDecimal.ZERO)
-                .exchangeRate(req.getExchangeRate() != null ? req.getExchangeRate() : BigDecimal.ONE)
-                .buyDate(req.getDate() != null ? req.getDate() : "")
-                .build();
-
-        db.addInventory(entity);
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+    @PostMapping("/save-config")
+    public ResponseEntity<Map<Boolean, Boolean>> saveConfig(@RequestBody Map<String, String> req) {
+        db.saveConfig(req.get("key"), req.get("value"), req.getOrDefault("desc", ""));
+        Map<Boolean, Boolean> res = new HashMap<>();
+        res.put(true, true);
+        return ResponseEntity.ok(res);
     }
 
-    @PostMapping("/remove-inventory")
-    public ResponseEntity<Map<String, Boolean>> removeInventory(@RequestBody InventoryRequest req) {
-        db.removeInventory(Long.parseLong(req.getId()));
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
-    }
-
-    @PostMapping("/remove-inventory-group")
-    public ResponseEntity<Map<String, Boolean>> removeInventoryGroup(@RequestBody InventoryRequest req) {
-        db.removeInventoryGroup(req.getSymbol());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+    private String resolveStockName(JsonNode first, String defaultSymbol) {
+        if (first.has(KEY_SHORTNAME))
+            return first.path(KEY_SHORTNAME).asText();
+        if (first.has(KEY_LONGNAME))
+            return first.path(KEY_LONGNAME).asText();
+        return defaultSymbol;
     }
 
     @PostMapping("/add-stock")
@@ -641,50 +452,82 @@ public class StockController {
         }
 
         db.addStock(symbol, currency, name);
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @PostMapping("/remove-stock")
     public ResponseEntity<Map<String, Boolean>> removeStock(@RequestBody StockRequest req) {
         db.removeStock(req.getSymbol());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @PostMapping("/rename-stock")
     public ResponseEntity<Map<String, Boolean>> renameStock(@RequestBody StockRequest req) {
         db.renameStock(req.getSymbol(), req.getNewName());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @PostMapping("/reorder-stocks")
     public ResponseEntity<Map<String, Boolean>> reorderStocks(@RequestBody StockRequest req) {
         db.updateStockOrder(req.getNewOrder());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
+    }
+
+    @PostMapping("/add-inventory")
+    public ResponseEntity<Map<String, Boolean>> addInventory(@RequestBody InventoryRequest req) {
+        com.example.golden_retriever_java.entity.InventoryEntity entity = com.example.golden_retriever_java.entity.InventoryEntity.builder()
+                .symbol(req.getSymbol())
+                .name((req.getName() != null && !req.getName().isEmpty()) ? req.getName() : req.getSymbol())
+                .price(req.getPrice() != null ? req.getPrice() : BigDecimal.ZERO)
+                .shares(req.getShares() != null ? req.getShares() : BigDecimal.ZERO)
+                .exchangeRate(req.getExchangeRate() != null ? req.getExchangeRate() : BigDecimal.ONE)
+                .buyDate(req.getDate() != null ? req.getDate() : "")
+                .build();
+
+        db.addInventory(entity);
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
+    }
+
+    @PostMapping("/remove-inventory")
+    public ResponseEntity<Map<String, Boolean>> removeInventory(@RequestBody InventoryRequest req) {
+        db.removeInventory(Long.parseLong(req.getId()));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
+    }
+
+    @PostMapping("/remove-inventory-group")
+    public ResponseEntity<Map<String, Boolean>> removeInventoryGroup(@RequestBody InventoryRequest req) {
+        db.removeInventoryGroup(req.getSymbol());
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @PostMapping("/add-currency")
     public ResponseEntity<Map<String, Boolean>> addCurrency(@RequestBody CurrencyRequest req) {
         db.addCurrency(req.getCurrency().toUpperCase());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @PostMapping("/remove-currency")
     public ResponseEntity<Map<String, Boolean>> removeCurrency(@RequestBody CurrencyRequest req) {
         db.removeCurrency(req.getCurrency());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @PostMapping("/reorder-currencies")
     public ResponseEntity<Map<String, Boolean>> reorderCurrencies(@RequestBody CurrencyRequest req) {
         db.updateCurrencyOrder(req.getNewOrder());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
+    }
+
+    @PostMapping("/add-dividend")
+    public ResponseEntity<Map<String, Boolean>> addDividend(@RequestBody DividendRequest req) {
+        db.addDividend(com.example.golden_retriever_java.entity.DividendEntity.builder().symbol(req.getSymbol()).name(req.getName()).amount(req.getAmount()).exchangeRate(req.getExchangeRate()).date(req.getDate()).type(req.getType()).build());
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @PostMapping("/sell-inventory")
     public ResponseEntity<Map<String, Boolean>> sellInventory(@RequestBody SellRequest req) {
-        db.sellInventory(req.getInventoryId(), req.getShares(), req.getSellPrice(), 
-                         req.getSellRate(), req.getSellDate());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        db.sellInventory(req.getInventoryId(), req.getShares(), req.getSellPrice(), req.getSellRate(), req.getSellDate());
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 
     @GetMapping("/transactions")
@@ -694,7 +537,7 @@ public class StockController {
 
     @PostMapping("/log")
     public ResponseEntity<Map<String, Boolean>> logClientError(@RequestBody LogRequest req) {
-        log.error("[Frontend Error] Context: {} | Message: {}\nStack: {}", req.getContext(), req.getMessage(), req.getStack());
-        return ResponseEntity.ok(Collections.singletonMap(KEY_SUCCESS, true));
+        log.error("[Frontend Error] Context: {} | Message: {}", req.getContext(), req.getMessage());
+        return ResponseEntity.ok(Map.of(KEY_SUCCESS, true));
     }
 }

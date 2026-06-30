@@ -36,6 +36,22 @@ public class SystemController {
         return ResponseEntity.ok(res);
     }
 
+    /**
+     * 手動觸發 ETF 淨值與基本面同步
+     */
+    @GetMapping("/system/sync-nav")
+    public ResponseEntity<Map<String, Object>> triggerSync() {
+        log.info("[System Controller] 收到手動同步請求 - 開始執行 refreshNavsFromApi");
+        try {
+            twStockService.refreshNavsFromApi();
+            log.info("[System Controller] refreshNavsFromApi 執行完成");
+            return ResponseEntity.ok(Map.of("success", true, "message", "同步指令已發出並完成解析"));
+        } catch (Exception e) {
+            log.error("[System Controller] 同步過程發生未預期錯誤: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     // [NEW] 匯出：僅分享清單 (不含庫存)
     @GetMapping("/export/share")
     public ResponseEntity<ShareDataDto> exportShareList() {

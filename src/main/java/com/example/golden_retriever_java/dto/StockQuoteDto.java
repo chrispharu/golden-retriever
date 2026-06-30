@@ -6,21 +6,27 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
-// [MODIFIED] 原因: 擴充欄位以 100% 對齊原 Node.js 中 fetchQuotes 回傳的資料結構
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class StockQuoteDto {
-    private BigDecimal price; // 現價
-    private BigDecimal prevClose; // 昨收
-    private BigDecimal high; // 最高
-    private BigDecimal low; // 最低
-    private BigDecimal fiftyTwoWeekHigh; // 52週最高
-    private BigDecimal fiftyTwoWeekLow; // 52週最低
-    private Long volume; // 今日成交量
-    private Long avgVolume; // 平均成交量
-    private String currency; // 幣別
-    private BigDecimal postMarketPrice; // 盤後價
-    private String marketStatus; // 開/收盤狀態 (OPEN/CLOSED)
+    private BigDecimal price;
+    private BigDecimal prevClose;
+    private BigDecimal high;
+    private BigDecimal low;
+    private BigDecimal fiftyTwoWeekHigh;
+    private BigDecimal fiftyTwoWeekLow;
+    private Long volume;
+    private Long avgVolume;
+    private String currency;
+    private BigDecimal postMarketPrice;
+    private String marketStatus;
+    private BigDecimal nav;
+    private Double premium;
+    private BigDecimal peRatio;
+    private BigDecimal dividendYield;
+    private BigDecimal pbRatio;
+    private Long foreignBuy;
+    private Long trustBuy;
 }

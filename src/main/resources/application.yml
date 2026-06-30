@@ -4,7 +4,6 @@ server:
 spring:
   application:
     name: golden-retriever-java
-  # [NEW] MSSQL 連線配置
   datasource:
     url: jdbc:sqlserver://localhost:1433;databaseName=GoldenRetriever;encrypt=true;trustServerCertificate=true
     username: sa
@@ -12,15 +11,16 @@ spring:
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
   jpa:
     hibernate:
-      ddl-auto: update # 自動維護資料表結構
-    show-sql: true # 顯示執行的 SQL
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.SQLServerDialect
+  main:
+    allow-bean-definition-overriding: true
 
 app:
-  # [MODIFIED] 原因: 將快取參數集中至此，完美取代 Node.js 的 config.js
   cache:
     max-age: 300000
     trading-open: 60000
@@ -35,4 +35,4 @@ logging:
   level:
     root: INFO
     com.example.golden_retriever_java: DEBUG
-    org.hibernate.SQL: DEBUG # 觀察 JPA 行為用
+    org.hibernate.SQL: DEBUG

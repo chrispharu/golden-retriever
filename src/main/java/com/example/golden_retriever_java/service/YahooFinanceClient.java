@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -153,35 +154,44 @@ public class YahooFinanceClient {
         }
 
         List<String> curList = (targetCurrencies != null && !targetCurrencies.isEmpty()) ? targetCurrencies : Collections.singletonList("USD");
-        List<String> symbols = curList.stream().map(c -> c + "TWD=X").toList();
         Map<String, Map<String, BigDecimal>> results = new HashMap<>();
+        List<String> symbolsToFetch = new ArrayList<>();
+
+        for (String c : curList) {
+            if ("TWD".equals(c)) {
+                Map<String, BigDecimal> twdData = new HashMap<>();
+                twdData.put("price", BigDecimal.ONE);
+                twdData.put("prevClose", BigDecimal.ONE);
+                results.put("TWD", twdData);
+            } else {
+                symbolsToFetch.add(c + "TWD=X");
+            }
+        }
+
+        if (symbolsToFetch.isEmpty()) return results;
 
         try {
             ensureSession();
-            String url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=" + String.join(",", symbols) + "&crumb=" + currentCrumb;
+            String url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=" + String.join(",", symbolsToFetch) + "&crumb=" + currentCrumb;
             JsonNode rootNode = webClient.get().uri(url).headers(getHeaders()).retrieve().bodyToMono(JsonNode.class).block();
-            JsonNode resultNode = rootNode.path("quoteResponse").path("result");
+            
+            if (rootNode == null || rootNode.path("quoteResponse").path("result").isMissingNode()) {
+                log.error("[YahooService] 匯率回傳空值，使用保底匯率");
+                results.putIfAbsent("USD", Map.of("price", new BigDecimal("32.3"), "prevClose", new BigDecimal("32.3")));
+                return results;
+            }
 
+            JsonNode resultNode = rootNode.path("quoteResponse").path("result");
             if (resultNode.isArray()) {
                 for (JsonNode q : resultNode) {
                     String sym = q.path("symbol").asText();
-                    
-                    // [FIX] Yahoo 常將 USDTWD=X 正規化為 TWD=X，導致 substring(0,3) 變成 "TWD"
-                    // 我們需要將其正確映射回 "USD" 以符合前端預期
                     String code = sym.substring(0, 3);
-                    if ("TWD=X".equals(sym)) {
-                        code = "USD";
-                    }
+                    if ("TWD=X".equals(sym) || "USDTWD=X".equals(sym)) code = "USD";
 
                     Map<String, BigDecimal> data = new HashMap<>();
-                    // [ENHANCED] 提高數值抓取魯棒性，優先取 regularMarketPrice，若無則嘗試 bid
-                    BigDecimal price = new BigDecimal(q.path("regularMarketPrice").asText("0"));
-                    if (price.compareTo(BigDecimal.ZERO) == 0 && q.has("bid")) {
-                        price = new BigDecimal(q.path("bid").asText("0"));
-                    }
-                    
+                    BigDecimal price = new BigDecimal(q.path("regularMarketPrice").asText("32.3")); // 保底
                     data.put("price", price);
-                    data.put("prevClose", new BigDecimal(q.path("regularMarketPreviousClose").asText("0")));
+                    data.put("prevClose", new BigDecimal(q.path("regularMarketPreviousClose").asText("32.3")));
                     results.put(code, data);
                 }
             }
@@ -199,6 +209,9 @@ public class YahooFinanceClient {
         List<String> symbolsToFetch = new ArrayList<>();
         long now = System.currentTimeMillis();
 
+        // 1. 預抓台股 ETF 淨值 (如果有的話)
+        Map<String, Map<String, Object>> twNavData = twStockService.fetchAllTwEtfNavs();
+
         for (String sym : symbols) {
             CacheEntry<StockQuoteDto> cached = quoteCache.get(sym);
             long cacheTTL = "OPEN".equals(getMarketStatus(sym)) ? cacheProps.getTradingOpen() : cacheProps.getTradingClosed();
@@ -212,15 +225,58 @@ public class YahooFinanceClient {
         if (!symbolsToFetch.isEmpty()) {
             try {
                 ensureSession();
-                String url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=" + String.join(",", symbolsToFetch) + "&crumb=" + currentCrumb;
+                // 這裡加入 navPrice 到請求中 (Yahoo v7 quote 支援)
+                // 增加更多欄位請求，包含 navPrice, trailingThreeMonthNav, netAssetValue
+                String fields = "regularMarketPrice,regularMarketPreviousClose,regularMarketDayHigh,regularMarketDayLow," +
+                               "fiftyTwoWeekHigh,fiftyTwoWeekLow,regularMarketVolume,averageDailyVolume10Day," +
+                               "currency,postMarketPrice,navPrice,trailingPE,dividendYield,priceToBook,trailingThreeMonthNav," +
+                               "netAssetValue,totalAssets";
+                String url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=" + String.join(",", symbolsToFetch) + "&fields=" + fields + "&crumb=" + currentCrumb;
                 JsonNode rootNode = webClient.get().uri(url).headers(getHeaders()).retrieve().bodyToMono(JsonNode.class).block();
                 JsonNode resultNode = rootNode.path("quoteResponse").path("result");
 
                 if (resultNode.isArray()) {
                     for (JsonNode q : resultNode) {
                         String sym = q.path("symbol").asText();
+                        BigDecimal price = new BigDecimal(q.path("regularMarketPrice").asText("0"));
+
+                        // 嘗試獲取淨值 (Yahoo 來源)
+                        BigDecimal nav = null;
+                        if (q.has("navPrice") && !q.path("navPrice").isNull()) {
+                            nav = new BigDecimal(q.path("navPrice").asText());
+                        } else if (q.has("trailingThreeMonthNav") && !q.path("trailingThreeMonthNav").isNull()) {
+                            nav = new BigDecimal(q.path("trailingThreeMonthNav").asText());
+                        } else if (q.has("netAssetValue") && !q.path("netAssetValue").isNull()) {
+                            nav = new BigDecimal(q.path("netAssetValue").asText());
+                        } else if (q.has("totalAssets")) {
+                            // 某些情況下 Yahoo 會回傳總資產而非每股淨值，僅作為診斷參考
+                            log.debug("[Yahoo] {} 發現總資產數據但非 NAV: {}", sym, q.path("totalAssets").asText());
+                        }
+
+                        // 嘗試獲取淨值 (台股來源)
+                        if (nav == null && twNavData.containsKey(sym)) {
+                            nav = (BigDecimal) twNavData.get(sym).get("nav");
+                        }
+
+                        // 計算折溢價
+                        Double premium = null;
+                        if (nav != null && nav.compareTo(BigDecimal.ZERO) > 0 && price.compareTo(BigDecimal.ZERO) > 0) {
+                            premium = price.subtract(nav).divide(nav, 4, RoundingMode.HALF_UP).doubleValue() * 100.0;
+                        } else if (twNavData.containsKey(sym) && twNavData.get(sym).containsKey("premium")) {
+                            // 若台股已有算好的折溢價，優先使用
+                            premium = (Double) twNavData.get(sym).get("premium");
+                        }
+
+                        // 擷取基本面數據
+                        BigDecimal pe = q.has("trailingPE") ? new BigDecimal(q.path("trailingPE").asText()) : null;
+                        BigDecimal dy = null;
+                        if (q.has("dividendYield")) {
+                            dy = new BigDecimal(q.path("dividendYield").asText());
+                        }
+                        BigDecimal pb = q.has("priceToBook") ? new BigDecimal(q.path("priceToBook").asText()) : null;
+
                         StockQuoteDto data = StockQuoteDto.builder()
-                                .price(new BigDecimal(q.path("regularMarketPrice").asText("0")))
+                                .price(price)
                                 .prevClose(new BigDecimal(q.path("regularMarketPreviousClose").asText("0")))
                                 .high(new BigDecimal(q.path("regularMarketDayHigh").asText(q.path("dayHigh").asText("0"))))
                                 .low(new BigDecimal(q.path("regularMarketDayLow").asText(q.path("dayLow").asText("0"))))
@@ -230,6 +286,11 @@ public class YahooFinanceClient {
                                 .avgVolume(q.path("averageDailyVolume10Day").asLong(0))
                                 .currency(q.path("currency").asText())
                                 .postMarketPrice(q.has("postMarketPrice") ? new BigDecimal(q.path("postMarketPrice").asText()) : null)
+                                .nav(nav)
+                                .premium(premium)
+                                .peRatio(pe)
+                                .dividendYield(dy)
+                                .pbRatio(pb)
                                 .build();
                         results.put(sym, data);
                         quoteCache.put(sym, new CacheEntry<>(data, now));
