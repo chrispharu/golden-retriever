@@ -1,0 +1,21 @@
+{
+  "stocks" : [ {
+    "symbol" : "QQQ",
+    "currency" : "USD",
+    "name" : "Invesco QQQ"
+  }, {
+    "symbol" : "2330.TW",
+    "currency" : "TWD",
+    "name" : "台積電"
+  }, {
+    "symbol" : "VOO",
+    "currency" : "USD",
+    "name" : "Vanguard S&P 500 ETF"
+  }, {
+    "symbol" : "SMCI",
+    "currency" : "USD",
+    "name" : "Super Micro Computer, Inc."
+  } ],
+  "currencies" : [ "USD", "JPY" ],
+  "inventory" : [ ]
+}

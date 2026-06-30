@@ -1,0 +1,1266 @@
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            font-family: -apple-system, system-ui, sans-serif;
+            height: 100%;
+        }
+
+        #app-container {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: flex-end;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+
+        #toggle-btn {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 2;
+            margin: 10px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: transform 0.1s;
+        }
+
+        #toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        #toggle-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #panel {
+            width: 280px;
+            height: 100%;
+            max-height: 98vh;
+            background: #f5f6f7;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            margin-bottom: 5px;
+            margin-right: 10px;
+            display: none;
+            flex-direction: column;
+            border: 1px solid #ccc;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #panel.show {
+            display: flex;
+        }
+
+        .header {
+            background: #fff;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #333;
+            flex-shrink: 0;
+        }
+
+        .settings-icon {
+            font-size: 16px;
+            cursor: pointer;
+            color: #888;
+            margin-right: 8px;
+        }
+
+        .settings-icon:hover {
+            color: #333;
+        }
+
+        /* 釘選按鈕 */
+        .pin-icon {
+            font-size: 14px;
+            cursor: pointer;
+            color: #999;
+            margin-right: 8px;
+            transition: all 0.2s;
+            opacity: 0.5;
+        }
+
+        .pin-icon:hover {
+            opacity: 1;
+        }
+
+        .pin-icon.active {
+            color: #e74c3c;
+            opacity: 1;
+            transform: rotate(45deg);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .gold-bar {
+            background: #fffdf0;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0e68c;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .gold-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #b78900;
+        }
+
+        .gold-info {
+            text-align: right;
+        }
+
+        .gold-price {
+            font-size: 14px;
+            font-weight: 800;
+            color: #b78900;
+        }
+
+        .gold-high {
+            font-size: 10px;
+            color: #d4a017;
+            margin-top: 2px;
+        }
+
+        .rate-bar {
+            background: #eaf2f8;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 1px solid #dbe9f3;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .rate-tag {
+            background: #fff;
+            color: #0056b3;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            font-weight: bold;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .rate-del {
+            color: #ccc;
+            cursor: pointer;
+            font-size: 10px;
+            width: 12px;
+            height: 12px;
+            line-height: 12px;
+            text-align: center;
+        }
+
+        .rate-del:hover {
+            color: red;
+            background: #eee;
+            border-radius: 50%;
+        }
+
+        .rate-add-btn {
+            background: #007aff;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .input-section {
+            padding: 8px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .input-box {
+            flex: 1;
+            min-width: 0;
+            padding: 6px 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .content {
+            flex: 1;
+            padding: 10px;
+            padding-bottom: 15px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .row {
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .row:hover {
+            background: #f9f9f9;
+            transform: translateY(-1px);
+        }
+
+        .price {
+            font-weight: 800;
+            font-size: 15px;
+            text-align: right;
+            color: #333;
+        }
+
+        /* 漲跌顏色 (台股習慣) */
+        .trend-up {
+            color: #e74c3c !important;
+        }
+
+        /* 漲: 紅 */
+        .trend-down {
+            color: #27ae60 !important;
+        }
+
+        /* 跌: 綠 */
+        .trend-flat {
+            color: #7f8c8d !important;
+        }
+
+        /* 平盤: 灰 */
+
+        .day-range {
+            font-size: 9px;
+            color: #999;
+            margin-top: 1px;
+            text-align: right;
+        }
+
+        .cost {
+            color: #b78900;
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 1px;
+            text-align: right;
+        }
+
+        .avg-cost {
+            font-size: 10px;
+            color: #007aff;
+            font-weight: bold;
+            margin-top: 1px;
+            text-align: right;
+        }
+
+        .search-result-item {
+            background: #fff;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-result-item:hover {
+            background: #f0f8ff;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            width: 80%;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-yes {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-confirm {
+            background: #007aff;
+            color: white;
+            width: 100%;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            background: #fff;
+        }
+
+        /* 庫存管理 */
+        #inventory-panel {
+            position: absolute;
+            top: 45px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f5f6f7;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+        }
+
+        .inv-form {
+            padding: 15px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* ==========================================
+   庫存面板：新增表單收合功能
+   ========================================== */
+        .inv-form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eaeaea;
+            margin-bottom: 10px;
+            transition: opacity 0.2s;
+        }
+
+        .inv-form-header:hover {
+            opacity: 0.7;
+            /* 滑鼠移過去時有一點回饋感 */
+        }
+
+        .inv-form-toggle-icon {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* 控制表單顯示與隱藏的 class */
+        .inv-form-body {
+            display: block;
+            /* 展開狀態 */
+        }
+
+        .inv-form-body.hidden {
+            display: none;
+            /* 收合狀態 */
+        }
+
+        .inv-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .inv-list {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            padding-bottom: 50px;
+        }
+
+        #inv-search-results {
+            max-height: 180px;
+            /* 稍微加高 */
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #007aff;
+            /* 搜尋時邊框變藍色，更明顯 */
+            margin-bottom: 10px;
+            display: none;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            position: relative;
+            /* 確保層級 */
+            z-index: 100;
+        }
+
+        .inv-search-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .inv-search-item:hover {
+            background: #f0f8ff;
+        }
+
+        /* 卡片 */
+        .inv-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .inv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 8px;
+        }
+
+        .inv-symbol {
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .inv-header-right {
+            text-align: right;
+        }
+
+        .inv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 11px;
+            color: #555;
+        }
+
+        .inv-cell {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inv-label {
+            color: #888;
+            font-size: 10px;
+        }
+
+        .inv-val {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .inv-pl.pos {
+            color: #e74c3c;
+        }
+
+        .inv-pl.neg {
+            color: #27ae60;
+        }
+
+        .inv-actions {
+            margin-top: 8px;
+            border-top: 1px dashed #eee;
+            padding-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .inv-detail-btn {
+            font-size: 10px;
+            color: #007aff;
+            cursor: pointer;
+        }
+
+        .inv-bulk-del {
+            font-size: 10px;
+            color: #e74c3c;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .inv-logs {
+            display: none;
+            margin-top: 5px;
+            background: #f9f9f9;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .inv-log-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #666;
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        #context-menu {
+            position: fixed;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            padding: 5px 0;
+            z-index: 9999;
+            display: none;
+            width: 100px;
+        }
+
+        .ctx-item {
+            padding: 8px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .ctx-item:hover {
+            background: #f0f8ff;
+            color: #007aff;
+        }
+
+        .ctx-item.delete {
+            color: #e74c3c;
+        }
+
+        /* --- 拖曳排序相關 --- */
+        .draggable {
+            cursor: grab;
+        }
+
+        .draggable:active {
+            cursor: grabbing;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            background: #f0f0f0;
+            border: 1px dashed #999;
+        }
+
+        /* ==========================================
+           新增功能補充
+           ========================================== */
+
+        /* 避免拖曳時選取文字造成視覺干擾 */
+        body,
+        html {
+            user-select: none;
+        }
+
+        /* --- 系統選單樣式 (更多選項) --- */
+        #system-menu {
+            position: absolute;
+            top: 40px;
+            left: 10px;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            padding: 5px 0;
+            z-index: 9999;
+            display: none;
+            width: 110px;
+            border: 1px solid #eee;
+        }
+
+        .sys-item {
+            padding: 8px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sys-item:hover {
+            background: #f0f8ff;
+            color: #007aff;
+        }
+
+        /* ==========================================
+                   從 HTML 萃取出來的工具與元件樣式 (Clean Code)
+                   ========================================== */
+
+        /* --- 排版工具類別 (Utility Classes) --- */
+        .flex-center {
+            display: flex;
+            align-items: center;
+        }
+
+        .flex-gap-5 {
+            display: flex;
+            gap: 5px;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        .flex-1-5 {
+            flex: 1.5;
+        }
+
+        .justify-end {
+            justify-content: flex-end;
+        }
+
+        .w-30 {
+            width: 30px;
+        }
+
+        .w-100 {
+            width: 100%;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+        }
+
+        /* --- 標題列元件 --- */
+        .sys-menu-btn {
+            font-size: 20px;
+            font-weight: bold;
+            margin-right: 8px;
+            margin-bottom: 4px;
+        }
+
+        .app-title {
+            font-weight: 800;
+            color: #b78900;
+        }
+
+        .close-panel-btn {
+            cursor: pointer;
+            color: #999;
+            padding: 0 5px;
+        }
+
+        /* --- 佈局區塊 --- */
+        #main-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .inv-panel-header {
+            padding: 10px;
+            font-weight: bold;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- 按鈕與表單元件 --- */
+        .btn-secondary {
+            background: #888;
+        }
+
+        .inv-form-title {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        #inv-symbol-locked {
+            margin-bottom: 8px;
+            background: #e8f5e9;
+            display: none;
+            width: 100%;
+            border-color: #4caf50;
+        }
+
+        #import-file {
+            display: none;
+        }
+
+        #rename-input {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        /* --- 庫存明細：刪除按鈕與防手滑狀態 --- */
+        .inv-log-del {
+            color: #e74c3c;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            /* 讓變化有柔和的過渡動畫 */
+        }
+
+        /* 當按鈕進入「確定刪除？」的警告狀態時套用 */
+        .inv-log-del.confirm-state {
+            background-color: #ffebee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        /* ==========================================
+           從 JS 萃取出的共用狀態與排版類別
+           ========================================== */
+
+        /* --- 狀態訊息 (載入中、錯誤、空資料) --- */
+        .status-msg {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .status-msg.error {
+            color: #e74c3c;
+        }
+
+        .status-msg.sm {
+            padding: 10px;
+        }
+
+        /* --- 文字顏色與排版工具 --- */
+        .text-danger {
+            color: #e74c3c;
+        }
+
+        .text-danger-bold {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .text-success-bold {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .text-muted {
+            color: #999;
+        }
+
+        .text-muted-sm {
+            color: #888;
+            font-size: 11px;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .pointer-none {
+            pointer-events: none;
+        }
+
+        /* --- 黃金區塊專用 --- */
+        .gold-title.fallback {
+            color: #e67e22;
+        }
+
+        .gold-info-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .gold-error-price {
+            color: #e74c3c;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* --- 股票與搜尋結果專用 --- */
+        .stock-col-left {
+            flex: 1;
+            pointer-events: none;
+        }
+
+        .update-time {
+            text-align: center;
+            font-size: 10px;
+            color: #ccc;
+            margin-top: 5px;
+            padding-bottom: 5px;
+        }
+
+        .exch-tag {
+            font-size: 10px;
+            background: #eee;
+            padding: 0 4px;
+            border-radius: 2px;
+        }
+
+        /* --- 庫存卡片專用 --- */
+        .inv-sym-lg {
+            font-size: 14px;
+        }
+
+        .inv-sym-sm {
+            font-size: 10px;
+            color: #999;
+            font-weight: normal;
+        }
+
+        .inv-pl-lg {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .inv-pl-sm {
+            font-size: 10px;
+        }
+
+        .inv-val.error {
+            color: #e74c3c;
+            font-size: 10px;
+        }
+
+        /* --- 輸入框鎖定狀態 --- */
+        input:disabled {
+            background-color: #eee;
+            cursor: not-allowed;
+        }
+
+        /* --- 庫存排序工具列 --- */
+        /* .inv-sort-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 6px 15px;
+            background: #fdfdfd;
+            border-bottom: 1px solid #eee;
+            gap: 6px;
+        }
+
+        .sort-select {
+            font-size: 11px;
+            padding: 3px 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            background: #fff;
+            color: #333;
+            font-family: inherit;
+        } */
+
+        /* --- 庫存明細與手風琴預設狀態 --- */
+        .inv-logs {
+            display: none;
+            /* 預設隱藏，等待點擊展開 */
+            margin-top: 10px;
+            border-top: 1px dashed #eee;
+            padding-top: 5px;
+        }
+
+        /* --- 盤中/盤後 狀態燈號 --- */
+        .market-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .market-dot.open {
+            background-color: #2ecc71;
+            /* 亮綠色 */
+            box-shadow: 0 0 5px #2ecc71;
+            /* 發光效果 */
+        }
+
+        .market-dot.closed {
+            background-color: #bdc3c7;
+            /* 沉穩灰 */
+        }
+
+        /* --- 盤後交易文字 --- */
+        .post-market-text {
+            font-size: 10px;
+            color: #888;
+            margin-top: 2px;
+            font-weight: normal;
+        }
+
+        /* ==========================================
+           K 線圖彈出視窗專屬樣式
+           ========================================== */
+
+        /* 覆蓋全螢幕的半透明黑色背景 */
+        .chart-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            /* 絕對要在最上層，蓋住所有東西 */
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 視窗本體 */
+        .chart-modal-content {
+            background-color: #fff;
+            width: 95%;
+            max-width: 600px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 標題與按鈕區塊 */
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .chart-title-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-title-text {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        /* 雙引擎按鈕 */
+        .chart-controls {
+            display: none;
+            /* 預設隱藏，由 JS 決定何時開啟 */
+            gap: 5px;
+        }
+
+        .chart-btn {
+            padding: 2px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .chart-btn-twse {
+            background-color: #34495e;
+        }
+
+        .chart-btn-fugle {
+            background-color: #f39c12;
+        }
+
+        /* 關閉按鈕 */
+        .chart-close-btn {
+            cursor: pointer;
+            font-size: 22px;
+            color: #999;
+            line-height: 1;
+        }
+
+        .chart-close-btn:hover {
+            color: #e74c3c;
+        }
+
+        /* 繪圖區 */
+        .chart-container-box {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+
+        /* ==========================================
+           富果 API Key 輸入視窗與圖表錯誤提示
+           ========================================== */
+        .fugle-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            /* 確保蓋在 K 線圖上面 */
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fugle-modal-content {
+            background-color: #fff;
+            width: 300px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .fugle-modal-title {
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 15px;
+            color: #333;
+        }
+
+        .fugle-modal-desc {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .fugle-modal-input {
+            width: 90%;
+            padding: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .fugle-modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .fugle-btn-cancel {
+            background-color: #bdc3c7;
+            color: #333;
+        }
+
+        .fugle-btn-cancel:hover {
+            background-color: #a6acb0;
+        }
+
+        /* K 線圖錯誤視窗的補充說明文字 */
+        .chart-error-note {
+            margin-top: 10px;
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* ==========================================
+           ⚙️ 系統選單 (整合設定面板)
+           ========================================== */
+        #system-menu {
+            width: 220px;
+            /* 稍微加寬以容納輸入框 */
+            /* 其他 #system-menu 原本的 position, background 等屬性請保持不動 */
+        }
+
+        .sys-settings-panel {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px 6px 0 0;
+            cursor: default;
+            /* 防止滑鼠移上去像按鈕一樣變色 */
+        }
+
+        .sys-settings-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .sys-input-group {
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .sys-label {
+            font-size: 11px;
+            color: #666;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .sys-input {
+            width: 100%;
+            padding: 6px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .sys-btn-save {
+            width: 100%;
+            padding: 8px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .sys-btn-save:hover {
+            background-color: #2980b9;
+        }
+
+        .sys-divider {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 4px 0;
+        }
+
+        /* ==========================================
+           📑 觀察清單頁籤列 (支援橫向滑動擴充)
+           ========================================== */
+        .portfolio-tabs {
+            display: flex;
+            overflow-x: auto;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            padding: 0 10px;
+            scrollbar-width: none;
+            /* Firefox 隱藏捲軸 */
+        }
+
+        .portfolio-tabs::-webkit-scrollbar {
+            display: none;
+            /* Chrome/Safari 隱藏捲軸，保持畫面乾淨 */
+        }
+
+        .tab-item {
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #888;
+            cursor: pointer;
+            white-space: nowrap;
+            /* 確保文字不換行 */
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-item:hover {
+            color: #555;
+        }
+
+        .tab-item.active {
+            color: #3498db;
+            font-weight: bold;
+            border-bottom: 2px solid #3498db;
+        }
+
+        /* 庫存面板內的頁籤微調 */
+        #inv-tabs {
+            border-bottom: none;
+            margin-bottom: 5px;
+            background: transparent;
+        }
+
+        /* ==========================================
+           庫存面板：下拉選單間距微調
+           ========================================== */
+        .inv-filter-select {
+            margin-right: 5px;
+        }
