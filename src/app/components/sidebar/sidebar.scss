@@ -1,7 +1,7 @@
 .market-grid-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .market-toolbar {
@@ -14,7 +14,7 @@
     flex: 1;
     position: relative;
     background: white;
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1rem;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -25,9 +25,8 @@
       flex: 1;
       border: none;
       background: transparent;
-      padding: 0.4rem;
       font-weight: 600;
-      color: var(--fur-brown);
+      color: var(--color-text-primary);
       font-size: 0.9rem;
       &:focus { outline: none; }
     }
@@ -47,9 +46,9 @@
         cursor: pointer;
         display: flex; justify-content: space-between;
         border-bottom: 1px solid #f0f0f0;
-        &:hover { background: var(--soft-cream); }
+        &:hover { background: var(--color-background-secondary); }
         .sym { font-weight: 800; color: var(--primary-gold); }
-        .name { color: var(--light-brown); font-size: 0.85rem; }
+        .name { color: var(--color-text-tertiary); font-size: 0.85rem; }
       }
     }
   }
@@ -66,16 +65,16 @@
 
 .cards-wrapper {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
 }
 
 .stock-card {
-  border-left: 4px solid #e0e0e0;
-  padding: 1.25rem !important;
+  border-left: 5px solid #e0e0e0;
+  padding: 1.5rem !important;
   
-  &.up { border-left-color: var(--friendly-green); }
-  &.down { border-left-color: var(--playful-red); }
+  &.up { border-left-color: var(--playful-red); }
+  &.down { border-left-color: var(--friendly-green); }
 
   .card-main {
     cursor: pointer;
@@ -86,15 +85,41 @@
       justify-content: space-between;
       align-items: flex-start;
 
-      .stock-name { font-size: 1.15rem; font-weight: 700; color: var(--color-text-primary); }
-      .stock-code { font-size: 0.75rem; font-weight: 600; color: var(--color-text-tertiary); margin-top: 2px; }
+      .name-block {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        
+        .stock-name { font-size: 1.3rem; font-weight: 700; color: var(--color-text-primary); }
+        .stock-code { font-size: 0.8rem; font-weight: 500; color: var(--color-text-tertiary); }
+      }
 
       .price-block {
         text-align: right;
-        &.up { color: var(--friendly-green); }
-        &.down { color: var(--playful-red); }
-        .price-main { font-size: 1.25rem; font-weight: 800; }
-        .price-change { font-size: 0.75rem; font-weight: 700; }
+        &.up { color: var(--playful-red); }
+        &.down { color: var(--friendly-green); }
+        .price-main { font-size: 1.4rem; font-weight: 800; }
+        .price-change { font-size: 0.85rem; font-weight: 700; }
+      }
+    }
+
+    .etf-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      
+      .nav-label { color: var(--color-text-tertiary); }
+      .nav-value { color: var(--color-text-secondary); margin-right: 0.25rem; }
+      
+      .premium-value {
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 800;
+        &.up { color: var(--playful-red); background: #feebeb; }
+        &.down { color: var(--friendly-green); background: #eaf3de; }
       }
     }
   }
@@ -106,7 +131,7 @@
 
     .status-pill {
       font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 100px;
-      &.pill-open { background: #eaf3de; color: #3b6d11; }
+      &.pill-open { background: #feebeb; color: #b71c1c; }
       &.pill-close { background: #f1efe8; color: #5f5e5a; }
     }
 
@@ -116,28 +141,12 @@
     }
   }
 
-  /* 觀察清單小總覽 */
-  .sidebar-summary {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background: var(--soft-cream);
-    border: 1px solid var(--primary-gold);
-    
-    .sum-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      .label { font-size: 0.75rem; font-weight: 700; color: var(--light-brown); }
-      .value { font-size: 1.1rem; font-weight: 900; color: var(--fur-brown); }
-    }
-  }
-
   .range-bar-wrap {
-    margin: 0.75rem 0;
+    margin: 1rem 0;
     .range-track {
       height: 4px; background: #eee; border-radius: 2px; position: relative;
-      .range-fill { height: 4px; border-radius: 2px; background: var(--friendly-green); }
-      .range-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--friendly-green); border: 2px solid white; position: absolute; top: -2px; transform: translateX(-4px); }
+      .range-fill { height: 4px; border-radius: 2px; background: var(--light-brown); }
+      .range-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary-gold); border: 2px solid white; position: absolute; top: -2px; transform: translateX(-4px); }
     }
   }
 
@@ -157,6 +166,34 @@
     }
     .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.1rem; }
     .btn-del { color: var(--playful-red); &:hover { opacity: 0.7; } }
+  }
+
+  .fundamental-panel {
+    background: var(--color-background-secondary);
+    margin: 1rem -1.5rem -1.5rem;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--color-border-tertiary);
+    animation: slideIn 0.2s ease-out;
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
+
+      .data-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        .lbl { font-size: 0.65rem; font-weight: 700; color: var(--color-text-tertiary); text-transform: uppercase; }
+        .val { font-size: 0.95rem; font-weight: 800; color: var(--color-text-primary); }
+        .highlight { color: #854f0b; font-weight: 800; }
+      }
+    }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .quick-add-panel {

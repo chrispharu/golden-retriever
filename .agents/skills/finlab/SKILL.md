@@ -298,4 +298,5 @@ Direct users to open an issue on GitHub: https://github.com/koreal6803/finlab-ai
 
 - Some data columns use Chinese names — this is expected, use them as-is in `data.get()` calls
 - Data frequency varies: daily (price), monthly (revenue), quarterly (financial statements)
+- **ETF NAV Handling**: When working with ETF net asset values, prioritize using the MIS `all_etf.txt` endpoint. Map fields `e` to iNAV, `f` to Yesterday NAV, and `g` to Premium %. Ensure robust fallback logic.
 - Always use `sim(..., upload=False)` for experiments, `upload=True` only for final production strategies

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StockService, GroupedInventory } from '../../services/stock';
 import { ChartModalComponent } from '../chart-modal/chart-modal';
+import { RiskModalComponent } from '../risk-modal/risk-modal';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartModalComponent],
+  imports: [CommonModule, FormsModule, ChartModalComponent, RiskModalComponent],
   templateUrl: './inventory.html',
   styleUrls: ['./inventory.scss']
 })
@@ -20,9 +21,12 @@ export class InventoryComponent implements OnChanges {
   searchQuery: string = '';
   sortMode: string = 'roi-desc';
   expandedSymbols: Set<string> = new Set();
+  fundamentalSymbols: Set<string> = new Set();
   
-  diagnosisData: Map<string, any> = new Map();
-  loadingDiagnosis: Set<string> = new Set();
+  // 診斷相關 (New BS Risk Modal)
+  isRiskModalVisible: boolean = false;
+  riskModalSymbol: string = '';
+  riskModalCost: number = 0;
   
   // 追蹤數值變動狀態以觸發動畫
   valueChanges: Map<string, 'up' | 'down' | null> = new Map();
@@ -53,10 +57,6 @@ export class InventoryComponent implements OnChanges {
     let totalCurrent = 0;
     let totalPrev = 0;
     this.displayInventory.forEach(group => {
-      // 假設 group.records 包含所有明細，我們需要計算昨收總值 vs 現價總值
-      // 這裡簡單計算：總市值 - (昨收 * 總股數 * 匯率)
-      const prevValueTWD = (group.totalShares || 0) * (group.records?.[0]?.exchangeRate || 1) * (group.currentPrice - (group.currentPrice * (group.roi / 100))); 
-      // 實際上後端應該提供更精確的昨收數據，這裡先做簡易估算
       totalCurrent += group.marketValueTWD;
       totalPrev += (group.marketValueTWD / (1 + (group.roi / 100)));
     });
@@ -77,7 +77,6 @@ export class InventoryComponent implements OnChanges {
     }
   }
 
-  // [RESTORE] 開啟 K 線圖
   openChart(event: Event, symbol: string): void {
     event.stopPropagation();
     this.chartSymbol = symbol;
@@ -89,35 +88,38 @@ export class InventoryComponent implements OnChanges {
     else this.expandedSymbols.add(symbol);
   }
 
-  toggleQuant(event: Event, symbol: string): void {
+  toggleFundamental(symbol: string): void {
+    if (this.fundamentalSymbols.has(symbol)) this.fundamentalSymbols.delete(symbol);
+    else this.fundamentalSymbols.add(symbol);
+  }
+
+  toggleQuant(event: Event, symbol: string, cost: number = 0): void {
     event.stopPropagation();
-    if (this.diagnosisData.has(symbol)) {
-      this.diagnosisData.get(symbol).isVisible = !this.diagnosisData.get(symbol).isVisible;
-      return;
-    }
-    this.loadingDiagnosis.add(symbol);
-    this.stockService.diagnoseStock(symbol).subscribe({
-      next: (res) => {
-        if (res.diagnosis && res.diagnosis[symbol.replace('.TW','')]) {
-          const data = res.diagnosis[symbol.replace('.TW','')];
-          this.diagnosisData.set(symbol, { ...data, isVisible: true });
-        }
-        this.loadingDiagnosis.delete(symbol);
-      },
-      error: () => this.loadingDiagnosis.delete(symbol)
-    });
+    this.riskModalSymbol = symbol;
+    this.riskModalCost = cost;
+    this.isRiskModalVisible = true;
   }
 
   applyFilterAndSort(): void {
     if (!this.groupedInventory) return;
 
-    // 偵測數值變動
+    // 診斷：檢查第一筆台股的基本面數據
+    const twStock = this.groupedInventory.find(s => s.symbol.includes('.TW'));
+    if (twStock) {
+      console.log(`[UI Audit] ${twStock.symbol} Data:`, {
+        pe: twStock.peRatio,
+        yield: twStock.dividendYield,
+        pb: twStock.pbRatio,
+        nav: twStock.nav
+      });
+    }
+
     this.groupedInventory.forEach(item => {
       const prev = this.prevValues.get(item.symbol);
       if (prev !== undefined && prev !== item.marketValueTWD) {
         const direction = item.marketValueTWD > prev ? 'up' : 'down';
         this.valueChanges.set(item.symbol, direction);
-        setTimeout(() => this.valueChanges.delete(item.symbol), 1000); // 1秒後移除動畫
+        setTimeout(() => this.valueChanges.delete(item.symbol), 1000);
       }
       this.prevValues.set(item.symbol, item.marketValueTWD);
     });
@@ -175,7 +177,6 @@ export class InventoryComponent implements OnChanges {
           this.showAddForm = false;
           this.newRecord = { symbol: '', name: '', price: null, shares: null, date: new Date().toISOString().split('T')[0], exchangeRate: 1.0 };
         } else {
-          // 連續模式：保留代碼與名稱，清空股數與價格，並重新獲取參考數據
           this.newRecord.shares = null;
           this.fetchReferenceData();
         }

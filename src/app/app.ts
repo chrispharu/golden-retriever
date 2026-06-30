@@ -43,7 +43,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.fugleKey.set(localStorage.getItem('FUGLE_API_KEY') || '');
       this.refreshAllData();
       
-      this.refreshSub = interval(30000).subscribe(() => this.refreshAllData());
+      // 每 30 秒靜默刷新數據，不觸發全螢幕 Loading
+      this.refreshSub = interval(30000).subscribe(() => this.refreshAllData(true));
       
       this.refreshQuota();
       this.quotaSub = interval(10000).subscribe(() => this.refreshQuota());
@@ -61,14 +62,17 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  public refreshAllData() {
-    this.isLoading.set(true);
+  public refreshAllData(quiet: boolean = false) {
+    if (!quiet) this.isLoading.set(true);
+    
     this.stockService.getDashboardData().subscribe({
       next: (data) => {
         this.dashboardData.set(data);
-        this.isLoading.set(false);
+        if (!quiet) this.isLoading.set(false);
       },
-      error: () => this.isLoading.set(false)
+      error: () => {
+        if (!quiet) this.isLoading.set(false);
+      }
     });
 
     this.stockService.getGoldData().subscribe(data => this.goldData.set(data));

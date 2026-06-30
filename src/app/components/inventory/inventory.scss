@@ -22,8 +22,9 @@
     .sum-daily {
       text-align: right;
       .val { font-size: 1.1rem; font-weight: 700; }
-      &.up .val { color: var(--friendly-green); }
-      &.down .val { color: var(--playful-red); }
+      /* 統一漲紅跌綠 */
+      &.up .val { color: var(--playful-red); }
+      &.down .val { color: var(--friendly-green); }
     }
   }
 
@@ -38,8 +39,9 @@
       text-align: center;
       .lbl { font-size: 0.65rem; color: var(--color-text-tertiary); font-weight: 700; margin-bottom: 2px; }
       .val { font-size: 0.9rem; font-weight: 700; }
-      .val.up { color: var(--friendly-green); }
-      .val.down { color: var(--playful-red); }
+      /* 統一漲紅跌綠 */
+      .val.up { color: var(--playful-red); }
+      .val.down { color: var(--friendly-green); }
     }
   }
 }
@@ -98,9 +100,10 @@
 }
 
 .stock-card {
-  border-left: 4px solid #e0e0e0;
-  &.up { border-left-color: var(--friendly-green); }
-  &.down { border-left-color: var(--playful-red); }
+  border-left: 5px solid #e0e0e0;
+  /* 統一漲紅跌綠 */
+  &.up { border-left-color: var(--playful-red); }
+  &.down { border-left-color: var(--friendly-green); }
 
   .card-row1 {
     display: flex;
@@ -108,13 +111,20 @@
     align-items: flex-start;
     margin-bottom: 0.5rem;
 
-    .stock-name { font-size: 1.2rem; font-weight: 700; color: var(--color-text-primary); }
-    .stock-code { font-size: 0.75rem; font-weight: 600; color: var(--color-text-tertiary); margin-top: 2px; }
+    .name-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      
+      .stock-name { font-size: 1.3rem; font-weight: 700; color: var(--color-text-primary); }
+      .stock-code { font-size: 0.8rem; font-weight: 500; color: var(--color-text-tertiary); }
+    }
 
     .price-block {
       text-align: right;
-      &.up { color: var(--friendly-green); }
-      &.down { color: var(--playful-red); }
+      /* 統一漲紅跌綠 */
+      &.up { color: var(--playful-red); }
+      &.down { color: var(--friendly-green); }
       .price-main { font-size: 1.4rem; font-weight: 800; }
       .price-change { font-size: 0.85rem; font-weight: 700; }
     }
@@ -127,7 +137,7 @@
 
     .status-pill {
       font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 100px;
-      &.pill-open { background: #eaf3de; color: #3b6d11; }
+      &.pill-open { background: #feebeb; color: #b71c1c; } /* 台股盤中改為淺紅提醒 */
       &.pill-close { background: #f1efe8; color: #5f5e5a; }
     }
 
@@ -139,15 +149,27 @@
 
   .metrics-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(3, 1fr); /* 改用 Grid 確保對齊 */
+    gap: 1rem;
     margin-bottom: 1rem;
 
     .metric {
-      .lbl { font-size: 0.65rem; color: var(--color-text-tertiary); font-weight: 700; margin-bottom: 4px; }
-      .val { font-size: 0.85rem; font-weight: 800; color: var(--color-text-primary); }
-      .val.up { color: var(--friendly-green); }
-      .val.down { color: var(--playful-red); }
+      .lbl { font-size: 0.65rem; color: var(--color-text-tertiary); font-weight: 700; margin-bottom: 4px; white-space: nowrap; }
+      .val { font-size: 0.9rem; font-weight: 800; color: var(--color-text-primary); }
+      /* 統一漲紅跌綠 */
+      .val.up { color: var(--playful-red); }
+      .val.down { color: var(--friendly-green); }
+
+      // 折溢價特別處理：溢價(Positive) = 紅色，折價(Negative) = 綠色
+      &.premium-metric {
+        grid-column: span 1;
+        .val {
+            padding: 2px 6px;
+            border-radius: 4px;
+            &.up { background: #feebeb; color: var(--playful-red); }
+            &.down { background: #eaf3de; color: var(--friendly-green); }
+        }
+      }
     }
   }
 
@@ -157,8 +179,8 @@
     .range-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--color-text-tertiary); margin-bottom: 4px; font-weight: 700; }
     .range-track {
       height: 4px; background: #eee; border-radius: 2px; position: relative;
-      .range-fill { height: 4px; border-radius: 2px; background: var(--friendly-green); }
-      .range-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--friendly-green); border: 2px solid white; position: absolute; top: -2px; transform: translateX(-4px); }
+      .range-fill { height: 4px; border-radius: 2px; background: var(--light-brown); }
+      .range-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary-gold); border: 2px solid white; position: absolute; top: -2px; transform: translateX(-4px); }
     }
     .range-pct { font-size: 0.65rem; color: var(--color-text-secondary); text-align: center; margin-top: 6px; font-weight: 600; }
   }
@@ -256,6 +278,40 @@
     padding: 1.25rem 1.5rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 0.75rem;
     button { padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; }
     .btn-cancel { background: #eee; color: #666; }
-    .btn-save { background: var(--friendly-green); color: white; &:disabled { opacity: 0.5; cursor: not-allowed; } }
+  .btn-save { background: var(--friendly-green); color: white; &:disabled { opacity: 0.5; cursor: not-allowed; } }
   }
+}
+
+/* 5. 進階數據面板 (展開) */
+.fundamental-panel {
+  background: var(--color-background-secondary);
+  margin: 1rem -1.5rem -1.5rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--color-border-tertiary);
+  animation: slideDown 0.2s ease-out;
+
+  .data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+
+    .data-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .lbl { font-size: 0.65rem; font-weight: 700; color: var(--color-text-tertiary); text-transform: uppercase; }
+      .val { 
+        font-size: 0.95rem; font-weight: 800; color: var(--color-text-primary); 
+        &.highlight { color: #854f0b; }
+        &.up { color: var(--playful-red); }
+        &.down { color: var(--friendly-green); }
+      }
+    }
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }

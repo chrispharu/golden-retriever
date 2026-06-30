@@ -62,7 +62,7 @@
                     <div class="price-main">{{ group.currentPrice | number:'1.2-4' }}</div>
                     <div class="price-change">{{ group.roi | number:'1.2-2' }}%</div>
                 </div>
-            </div>
+            </div> <!-- End of card-row1 -->
 
             <div class="status-row">
                 <span class="status-pill" [class.pill-open]="group.marketStatus === 'OPEN'" [class.pill-close]="group.marketStatus !== 'OPEN'">
@@ -88,34 +88,58 @@
                         {{ group.plAmountTWD | number:'1.0-0' }}
                     </div>
                 </div>
-            </div>
-
-            <!-- 52週進度條 -->
-            <div class="range-bar-wrap" *ngIf="group.fiftyTwoWeekHigh && group.fiftyTwoWeekLow">
-                <div class="range-labels">
-                    <span>52W 低 {{ group.fiftyTwoWeekLow }}</span>
-                    <span>52W 高 {{ group.fiftyTwoWeekHigh }}</span>
-                </div>
-                <div class="range-track">
-                    <div class="range-fill" [style.width.%]="getRangePosition(group.currentPrice, group.fiftyTwoWeekHigh, group.fiftyTwoWeekLow)"></div>
-                    <div class="range-dot" [style.left.%]="getRangePosition(group.currentPrice, group.fiftyTwoWeekHigh, group.fiftyTwoWeekLow)"></div>
-                </div>
-                <div class="range-pct">目前位於年內 {{ getRangePosition(group.currentPrice, group.fiftyTwoWeekHigh, group.fiftyTwoWeekLow) | number:'1.0-0' }}% 位置</div>
+                <!-- 移除主欄位中的 ETF 淨值，改放入展開區域 -->
             </div>
 
             <div class="card-actions">
                 <div class="btn-group">
                     <button class="btn-sm" (click)="toggleExpand(group.symbol)" [class.active]="expandedSymbols.has(group.symbol)">📜 明細</button>
-                    <button class="btn-sm" (click)="toggleQuant($event, group.symbol)" [class.active]="diagnosisData.get(group.symbol)?.isVisible">🧠 診斷</button>
-                    <button class="btn-sm" (click)="openChart($event, group.symbol)">📊 K線</button>
+                    <button class="btn-sm" (click)="toggleFundamental(group.symbol)" [class.active]="fundamentalSymbols.has(group.symbol)">📊 數據</button>
+                    <button class="btn-sm" (click)="toggleQuant($event, group.symbol, (group.totalCostOriginal / group.totalShares))" [class.active]="isRiskModalVisible && riskModalSymbol === group.symbol">🧠 診斷</button>
+                    <button class="btn-sm" (click)="openChart($event, group.symbol)">📈 K線</button>
                 </div>
                 <button class="btn-icon btn-del" (click)="deleteInventoryGroup($event, group.symbol)">🗑</button>
             </div>
 
-            <!-- 診斷內容 (展開) -->
-            <div class="diagnosis-panel-mini" *ngIf="diagnosisData.get(group.symbol)?.isVisible">
-                <div class="diag-score">AI 信心: {{ diagnosisData.get(group.symbol).ai_score }}</div>
-                <!-- 簡化診斷顯示... -->
+            <!-- [NEW] 基本面數據 (展開) -->
+            <div class="fundamental-panel" *ngIf="fundamentalSymbols.has(group.symbol)">
+                <div class="data-grid">
+                    <div class="data-item" *ngIf="group.peRatio != null">
+                        <span class="lbl">本益比 (P/E)</span>
+                        <span class="val">{{ group.peRatio | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.dividendYield != null">
+                        <span class="lbl">殖利率</span>
+                        <span class="val highlight">{{ group.dividendYield | number:'1.2-2' }}%</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.pbRatio != null">
+                        <span class="lbl">股價淨值比 (P/B)</span>
+                        <span class="val">{{ group.pbRatio | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.nav != null">
+                        <span class="lbl">ETF 淨值 (NAV)</span>
+                        <span class="val">{{ group.nav | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.premium != null">
+                        <span class="lbl">折溢價</span>
+                        <span class="val" [class.up]="group.premium > 0" [class.down]="group.premium < 0">
+                            {{ group.premium > 0 ? '+' : '' }}{{ group.premium | number:'1.2-2' }}%
+                        </span>
+                    </div>
+                    <!-- 籌碼數據 -->
+                    <div class="data-item" *ngIf="group.foreignBuy != null">
+                        <span class="lbl">外資買賣超 (張)</span>
+                        <span class="val" [class.up]="group.foreignBuy > 0" [class.down]="group.foreignBuy < 0">
+                            {{ group.foreignBuy > 0 ? '+' : '' }}{{ group.foreignBuy | number:'1.0-0' }}
+                        </span>
+                    </div>
+                    <div class="data-item" *ngIf="group.trustBuy != null">
+                        <span class="lbl">投信買賣超 (張)</span>
+                        <span class="val" [class.up]="group.trustBuy > 0" [class.down]="group.trustBuy < 0">
+                            {{ group.trustBuy > 0 ? '+' : '' }}{{ group.trustBuy | number:'1.0-0' }}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <!-- 明細清單 (展開) -->
@@ -194,4 +218,12 @@
         [isVisible]="isChartVisible" 
         (closeEvent)="isChartVisible = false">
     </app-chart-modal>
+
+    <!-- [NEW] 風險診斷彈窗 -->
+    <app-risk-modal
+        [symbol]="riskModalSymbol"
+        [isVisible]="isRiskModalVisible"
+        [cost]="riskModalCost"
+        (closeEvent)="isRiskModalVisible = false">
+    </app-risk-modal>
 </div>

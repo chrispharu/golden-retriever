@@ -53,8 +53,15 @@ export interface PortfolioItem {
   avgCost: number;
   avgCostTWD: number;
   link: string;
-  volStatus?: string; // NEW: Volume signal
-  range52w?: number;  // NEW: 0-100 position in 52w high/low
+  volStatus?: string;
+  range52w?: number;
+  nav?: number;
+  premium?: number;
+  peRatio?: number;
+  dividendYield?: number;
+  pbRatio?: number;
+  foreignBuy?: number;
+  trustBuy?: number;
 }
 
 export interface InventoryRecord {
@@ -87,7 +94,9 @@ export interface GroupedInventory {
   hasValidRate: boolean;
   aiScore?: number;
   roe?: number;
-  pe?: number;
+  peRatio?: number;
+  dividendYield?: number;
+  pbRatio?: number;
   bias?: number;
   foreignBuy?: number;
   trustBuy?: number;
@@ -95,6 +104,8 @@ export interface GroupedInventory {
   fiftyTwoWeekLow?: number;
   volume?: number;
   avgVolume?: number;
+  nav?: number;       // ETF Net Asset Value
+  premium?: number;   // ETF Premium/Discount (%)
 }
 
 export interface GoldPrice {

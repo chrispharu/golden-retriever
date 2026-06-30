@@ -1,13 +1,16 @@
 {
   "name": "golden-retriever-web",
   "version": "0.0.0",
+  "main": "main.js",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:golden-retriever-web": "node dist/golden-retriever-web/server/server.mjs"
+    "serve:ssr:golden-retriever-web": "node dist/golden-retriever-web/server/server.mjs",
+    "electron": "electron .",
+    "electron:dev": "electron . --dev"
   },
   "private": true,
   "packageManager": "npm@10.8.2",
@@ -31,6 +34,7 @@
     "@angular/compiler-cli": "^21.2.0",
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.19",
+    "electron": "^42.5.1",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",

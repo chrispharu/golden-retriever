@@ -55,13 +55,15 @@
       <div class="section-header">
         <h2>💼 庫存管理</h2>
       </div>
-      <div class="dashboard-content" *ngIf="!isLoading()">
+      <div class="dashboard-content">
+        <!-- 移除 *ngIf="!isLoading()"，讓組件在背景刷新時不被銷毀 -->
         <app-inventory
           [groupedInventory]="dashboardData()?.groupedInventory || []"
           (dataChanged)="refreshAllData()">
         </app-inventory>
       </div>
-      <div class="loading-overlay" *ngIf="isLoading()">
+      <!-- 僅在完全沒有數據且載入中時顯示大 Loading -->
+      <div class="loading-overlay" *ngIf="isLoading() && !dashboardData()">
         <div class="spinner"></div>
         <p>正在載入數據...</p>
       </div>

@@ -28,6 +28,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   public quickAddSymbol: string | null = null;
   public quickAddData: any = { price: null, shares: null, date: new Date().toISOString().split('T')[0], exchangeRate: 1.0 };
   public loadingRef: boolean = false;
+  
+  public fundamentalSymbols: Set<string> = new Set();
 
   private searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;
@@ -98,7 +100,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.addStock();
   }
 
-  // [NEW] 供模板直接呼叫的便捷方法
   onRename(symbol: string): void {
     const newName = prompt(`修改 ${symbol} 的顯示名稱：`);
     if (newName && newName.trim()) {
@@ -121,26 +122,33 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.isChartVisible = true;
   }
 
-  toggleQuickAdd(event: Event, stock: PortfolioItem): void {
+  toggleQuickAdd(event: Event, stock: PortfolioItem) {
     event.stopPropagation();
     if (this.quickAddSymbol === stock.symbol) {
       this.quickAddSymbol = null;
     } else {
       this.quickAddSymbol = stock.symbol;
-      this.quickAddData = { 
-        symbol: stock.symbol, 
-        name: stock.name, 
-        price: stock.price, 
-        shares: null, 
-        date: new Date().toISOString().split('T')[0], 
-        exchangeRate: stock.rate || 1.0 
+      this.quickAddData = {
+        symbol: stock.symbol,
+        name: stock.name,
+        price: stock.price,
+        shares: 0,
+        date: new Date().toISOString().split('T')[0],
+        exchangeRate: stock.rate || 1
       };
       this.fetchReferenceData();
       
-      // 自動聚焦股數欄位 (延遲一下等 DOM 渲染)
       setTimeout(() => {
         this.sharesInput?.nativeElement.focus();
       }, 100);
+    }
+  }
+
+  toggleFundamental(symbol: string) {
+    if (this.fundamentalSymbols.has(symbol)) {
+      this.fundamentalSymbols.delete(symbol);
+    } else {
+      this.fundamentalSymbols.add(symbol);
     }
   }
 

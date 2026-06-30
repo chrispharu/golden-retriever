@@ -1,15 +1,4 @@
 <div class="market-grid-container">
-    <!-- 觀察清單小總覽 -->
-    <div class="sidebar-summary card-base" *ngIf="portfolio.length > 0">
-        <div class="sum-row">
-            <span class="label">觀察清單今日預估損益</span>
-            <div class="value" [class.up]="getDailyChange().amount > 0" [class.down]="getDailyChange().amount < 0">
-                {{ getDailyChange().amount > 0 ? '+' : '' }}NT$ {{ getDailyChange().amount | number:'1.0-0' }}
-                ({{ getDailyChange().percent | percent:'1.2-2' }})
-            </div>
-        </div>
-    </div>
-
     <!-- 工具列 -->
     <div class="market-toolbar">
         <div class="search-input-wrapper">
@@ -48,6 +37,16 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="etf-info" *ngIf="stock.nav != null || stock.premium != null">
+                    <span class="nav-label">淨值</span>
+                    <span class="nav-value">{{ stock.nav | number:'1.2-2' }}</span>
+                    <span class="premium-value" *ngIf="stock.premium != null" 
+                          [class.up]="stock.premium > 0" 
+                          [class.down]="stock.premium < 0">
+                        {{ stock.premium > 0 ? '+' : '' }}{{ stock.premium | number:'1.2-2' }}%
+                    </span>
+                </div>
             </div>
 
             <div class="status-row">
@@ -69,11 +68,33 @@
 
             <div class="card-actions">
                 <div class="btn-group">
+                    <button class="btn-sm" (click)="toggleFundamental(stock.symbol); $event.stopPropagation()" [class.active]="fundamentalSymbols.has(stock.symbol)">📊 數據</button>
                     <button class="btn-sm" (click)="toggleQuickAdd($event, stock)" [class.active]="quickAddSymbol === stock.symbol">➕ 庫存</button>
-                    <button class="btn-sm" (click)="openChart(stock.symbol); $event.stopPropagation()">📊 K線</button>
-                    <button class="btn-sm" (click)="onRename(stock.symbol); $event.stopPropagation()">✎ 改名</button>
+                    <button class="btn-sm" (click)="openChart(stock.symbol); $event.stopPropagation()">📈 K線</button>
                 </div>
                 <button class="btn-icon btn-del" (click)="onRemove(stock.symbol); $event.stopPropagation()">🗑</button>
+            </div>
+
+            <!-- [NEW] 基本面數據 (展開) -->
+            <div class="fundamental-panel sidebar-mode" *ngIf="fundamentalSymbols.has(stock.symbol)" (click)="$event.stopPropagation()">
+                <div class="data-grid">
+                    <div class="data-item" *ngIf="stock.peRatio">
+                        <span class="lbl">P/E</span>
+                        <span class="val">{{ stock.peRatio | number:'1.1-1' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="stock.dividendYield">
+                        <span class="lbl">殖利率</span>
+                        <span class="val highlight">{{ stock.dividendYield | number:'1.1-1' }}%</span>
+                    </div>
+                    <div class="data-item" *ngIf="stock.pbRatio">
+                        <span class="lbl">P/B</span>
+                        <span class="val">{{ stock.pbRatio | number:'1.1-1' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="stock.nav">
+                        <span class="lbl">NAV</span>
+                        <span class="val">{{ stock.nav | number:'1.1-1' }}</span>
+                    </div>
+                </div>
             </div>
 
             <!-- 快速庫存登錄迷你表單 -->
