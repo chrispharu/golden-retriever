@@ -1,0 +1,129 @@
+<div class="market-grid-container">
+    <!-- 工具列 -->
+    <div class="market-toolbar">
+        <div class="search-input-wrapper">
+            <span class="icon">🔍</span>
+            <input type="text" [(ngModel)]="newStockSymbol" (ngModelChange)="onSearchInput($event)"
+                placeholder="輸入代碼或搜尋名稱..." (keyup.enter)="addStock()">
+
+            <ul class="autocomplete-dropdown" *ngIf="searchResults.length > 0">
+                <li *ngFor="let result of searchResults" (click)="selectSearchResult(result.symbol, result.name)">
+                    <span class="name">{{ result.name }}</span>
+                    <span class="sym">{{ result.symbol }}</span>
+                </li>
+            </ul>
+        </div>
+        <button class="btn-add-primary" (click)="addStock()">+ 加入清單</button>
+    </div>
+
+    <!-- 觀察清單卡片網格 (對齊庫存樣式) -->
+    <div class="cards-wrapper">
+        <div *ngFor="let stock of portfolio" class="stock-card card-base" 
+             [class.up]="stock.price > stock.prevClose" 
+             [class.down]="stock.price < stock.prevClose">
+            
+            <div class="card-main" (click)="openStockLink(stock.link)">
+                <div class="card-row1">
+                    <div class="name-block">
+                        <div class="stock-name">{{ stock.name }}</div>
+                        <div class="stock-code">{{ stock.symbol }}</div>
+                    </div>
+                    <div class="price-block" [class.up]="stock.price > stock.prevClose" [class.down]="stock.price < stock.prevClose">
+                        <div class="price-main">{{ stock.price | number:'1.2-4' }}</div>
+                        <div class="price-change">
+                            {{ (stock.price - stock.prevClose) > 0 ? '▲' : '▼' }}
+                            {{ (stock.price - stock.prevClose) | number:'1.2-2' }}
+                            ({{ (stock.price - stock.prevClose) / stock.prevClose | percent:'1.2-2' }})
+                        </div>
+                    </div>
+                </div>
+
+                <div class="etf-info" *ngIf="stock.nav != null || stock.premium != null">
+                    <span class="nav-label">淨值</span>
+                    <span class="nav-value">{{ stock.nav | number:'1.2-2' }}</span>
+                    <span class="premium-value" *ngIf="stock.premium != null" 
+                          [class.up]="stock.premium > 0" 
+                          [class.down]="stock.premium < 0">
+                        {{ stock.premium > 0 ? '+' : '' }}{{ stock.premium | number:'1.2-2' }}%
+                    </span>
+                </div>
+            </div>
+
+            <div class="status-row">
+                <span class="status-pill" [class.pill-open]="stock.marketStatus === 'OPEN'" [class.pill-close]="stock.marketStatus !== 'OPEN'">
+                    {{ stock.marketStatus === 'OPEN' ? '盤中開市' : '已休市' }}
+                </span>
+                <span class="vol-tag" *ngIf="stock.volume && stock.avgVolume">
+                    {{ stock.volume > stock.avgVolume * 1.5 ? '🔥 量增' : '🧊 量縮' }}
+                </span>
+            </div>
+
+            <!-- 52週進度條 (觀察清單也加入，提升一致性) -->
+            <div class="range-bar-wrap" *ngIf="stock.fiftyTwoWeekHigh && stock.fiftyTwoWeekLow">
+                <div class="range-track">
+                    <div class="range-fill" [style.width.%]="getRangePosition(stock.price, stock.fiftyTwoWeekHigh, stock.fiftyTwoWeekLow)"></div>
+                    <div class="range-dot" [style.left.%]="getRangePosition(stock.price, stock.fiftyTwoWeekHigh, stock.fiftyTwoWeekLow)"></div>
+                </div>
+            </div>
+
+            <div class="card-actions">
+                <div class="btn-group">
+                    <button class="btn-sm" (click)="toggleFundamental(stock.symbol); $event.stopPropagation()" [class.active]="fundamentalSymbols.has(stock.symbol)">📊 數據</button>
+                    <button class="btn-sm" (click)="toggleQuickAdd($event, stock)" [class.active]="quickAddSymbol === stock.symbol">➕ 庫存</button>
+                    <button class="btn-sm" (click)="openChart(stock.symbol); $event.stopPropagation()">📈 K線</button>
+                </div>
+                <button class="btn-icon btn-del" (click)="onRemove(stock.symbol); $event.stopPropagation()">🗑</button>
+            </div>
+
+            <!-- [NEW] 基本面數據 (展開) -->
+            <div class="fundamental-panel sidebar-mode" *ngIf="fundamentalSymbols.has(stock.symbol)" (click)="$event.stopPropagation()">
+                <div class="data-grid">
+                    <div class="data-item" *ngIf="stock.peRatio">
+                        <span class="lbl">P/E</span>
+                        <span class="val">{{ stock.peRatio | number:'1.1-1' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="stock.dividendYield">
+                        <span class="lbl">殖利率</span>
+                        <span class="val highlight">{{ stock.dividendYield | number:'1.1-1' }}%</span>
+                    </div>
+                    <div class="data-item" *ngIf="stock.pbRatio">
+                        <span class="lbl">P/B</span>
+                        <span class="val">{{ stock.pbRatio | number:'1.1-1' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="stock.nav">
+                        <span class="lbl">NAV</span>
+                        <span class="val">{{ stock.nav | number:'1.1-1' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快速庫存登錄迷你表單 -->
+            <div class="quick-add-panel" *ngIf="quickAddSymbol === stock.symbol" (click)="$event.stopPropagation()">
+                <div class="mini-form">
+                    <div class="row">
+                        <div class="form-field">
+                            <label>日期</label>
+                            <input type="date" [(ngModel)]="quickAddData.date" (ngModelChange)="fetchReferenceData()">
+                        </div>
+                        <div class="form-field">
+                            <label>價格</label>
+                            <input type="number" step="any" [(ngModel)]="quickAddData.price" [placeholder]="loadingRef ? '⌛' : '價格'">
+                        </div>
+                        <div class="form-field">
+                            <label>股數</label>
+                            <input type="number" step="any" [(ngModel)]="quickAddData.shares" placeholder="股數" #sharesInput>
+                        </div>
+                    </div>
+                    <button class="btn-submit" (click)="submitQuickAdd($event)" [disabled]="!quickAddData.shares">✅ 儲存庫存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- K 線圖彈窗 -->
+    <app-chart-modal 
+        [symbol]="chartSymbol" 
+        [isVisible]="isChartVisible" 
+        (closeEvent)="isChartVisible = false">
+    </app-chart-modal>
+</div>

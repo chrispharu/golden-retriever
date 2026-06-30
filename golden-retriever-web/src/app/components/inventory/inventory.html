@@ -1,0 +1,229 @@
+<div class="inventory-container">
+    <!-- 1. 頂部總覽欄 -->
+    <div class="summary-bar card-base" *ngIf="displayInventory.length > 0">
+        <div class="summary-top">
+            <div class="sum-main">
+                <div class="summary-label">總持股市值</div>
+                <div class="summary-total">NT$ {{ getTotalMarketValue() | number:'1.0-0' }}</div>
+            </div>
+            <div class="sum-daily" [class.up]="getDailyChange().amount > 0" [class.down]="getDailyChange().amount < 0">
+                <div class="summary-label">今日損益 (預估)</div>
+                <div class="val">
+                    {{ getDailyChange().amount > 0 ? '+' : '' }}NT$ {{ getDailyChange().amount | number:'1.0-0' }}
+                    ({{ getDailyChange().percent | percent:'1.2-2' }})
+                </div>
+            </div>
+        </div>
+        <div class="summary-grid">
+            <div class="sum-item">
+                <div class="lbl">投入成本</div>
+                <div class="val">NT$ {{ getTotalCost() | number:'1.0-0' }}</div>
+            </div>
+            <div class="sum-item">
+                <div class="lbl">累計損益</div>
+                <div class="val" [class.up]="getTotalMarketValue() > getTotalCost()" [class.down]="getTotalMarketValue() < getTotalCost()">
+                    {{ (getTotalMarketValue() - getTotalCost()) / getTotalCost() | percent:'1.2-2' }}
+                </div>
+            </div>
+            <div class="sum-item">
+                <div class="lbl">持股數</div>
+                <div class="val">{{ displayInventory.length }} 檔</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 工具列 -->
+    <div class="toolbar">
+        <div class="search-box">
+            <span class="icon">🔍</span>
+            <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilterAndSort()"
+                placeholder="搜尋代碼或公司名稱..." />
+        </div>
+        <select [(ngModel)]="sortMode" (ngModelChange)="applyFilterAndSort()">
+            <option value="roi-desc">📈 投報率 (高)</option>
+            <option value="roi-asc">📉 投報率 (低)</option>
+            <option value="value-desc">💰 市值 (高)</option>
+            <option value="value-asc">💸 市值 (低)</option>
+        </select>
+        <button class="btn-add" (click)="showAddForm = true">➕ 新增庫存</button>
+    </div>
+
+    <!-- 3. 庫存卡片網格 -->
+    <div class="inventory-grid">
+        <div *ngFor="let group of displayInventory" class="stock-card card-base" 
+             [class.up]="group.roi > 0" [class.down]="group.roi < 0">
+            
+            <div class="card-row1">
+                <div class="name-block">
+                    <div class="stock-name">{{ group.name }}</div>
+                    <div class="stock-code">{{ group.symbol }} &nbsp;·&nbsp; {{ group.totalShares | number:'1.2-4' }} 股</div>
+                </div>
+                <div class="price-block" [class.up]="group.roi > 0" [class.down]="group.roi < 0">
+                    <div class="price-main">{{ group.currentPrice | number:'1.2-4' }}</div>
+                    <div class="price-change">{{ group.roi | number:'1.2-2' }}%</div>
+                </div>
+            </div> <!-- End of card-row1 -->
+
+            <div class="status-row">
+                <span class="status-pill" [class.pill-open]="group.marketStatus === 'OPEN'" [class.pill-close]="group.marketStatus !== 'OPEN'">
+                    {{ group.marketStatus === 'OPEN' ? '盤中開市' : '已休市' }}
+                </span>
+                <span class="vol-tag" *ngIf="group.volume && group.avgVolume">
+                    {{ group.volume > group.avgVolume * 1.5 ? '🔥 量增' : '🧊 量縮' }}
+                </span>
+            </div>
+
+            <div class="metrics-row">
+                <div class="metric">
+                    <div class="lbl">持股市值 (NT)</div>
+                    <div class="val">{{ group.marketValueTWD | number:'1.0-0' }}</div>
+                </div>
+                <div class="metric">
+                    <div class="lbl">成本均價</div>
+                    <div class="val">{{ (group.totalCostOriginal / group.totalShares) | number:'1.2-4' }}</div>
+                </div>
+                <div class="metric">
+                    <div class="lbl">累積損益</div>
+                    <div class="val" [class.up]="group.roi > 0" [class.down]="group.roi < 0">
+                        {{ group.plAmountTWD | number:'1.0-0' }}
+                    </div>
+                </div>
+                <!-- 移除主欄位中的 ETF 淨值，改放入展開區域 -->
+            </div>
+
+            <div class="card-actions">
+                <div class="btn-group">
+                    <button class="btn-sm" (click)="toggleExpand(group.symbol)" [class.active]="expandedSymbols.has(group.symbol)">📜 明細</button>
+                    <button class="btn-sm" (click)="toggleFundamental(group.symbol)" [class.active]="fundamentalSymbols.has(group.symbol)">📊 數據</button>
+                    <button class="btn-sm" (click)="toggleQuant($event, group.symbol, (group.totalCostOriginal / group.totalShares))" [class.active]="isRiskModalVisible && riskModalSymbol === group.symbol">🧠 診斷</button>
+                    <button class="btn-sm" (click)="openChart($event, group.symbol)">📈 K線</button>
+                </div>
+                <button class="btn-icon btn-del" (click)="deleteInventoryGroup($event, group.symbol)">🗑</button>
+            </div>
+
+            <!-- [NEW] 基本面數據 (展開) -->
+            <div class="fundamental-panel" *ngIf="fundamentalSymbols.has(group.symbol)">
+                <div class="data-grid">
+                    <div class="data-item" *ngIf="group.peRatio != null">
+                        <span class="lbl">本益比 (P/E)</span>
+                        <span class="val">{{ group.peRatio | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.dividendYield != null">
+                        <span class="lbl">殖利率</span>
+                        <span class="val highlight">{{ group.dividendYield | number:'1.2-2' }}%</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.pbRatio != null">
+                        <span class="lbl">股價淨值比 (P/B)</span>
+                        <span class="val">{{ group.pbRatio | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.nav != null">
+                        <span class="lbl">ETF 淨值 (NAV)</span>
+                        <span class="val">{{ group.nav | number:'1.2-2' }}</span>
+                    </div>
+                    <div class="data-item" *ngIf="group.premium != null">
+                        <span class="lbl">折溢價</span>
+                        <span class="val" [class.up]="group.premium > 0" [class.down]="group.premium < 0">
+                            {{ group.premium > 0 ? '+' : '' }}{{ group.premium | number:'1.2-2' }}%
+                        </span>
+                    </div>
+                    <!-- 籌碼數據 -->
+                    <div class="data-item" *ngIf="group.foreignBuy != null">
+                        <span class="lbl">外資買賣超 (張)</span>
+                        <span class="val" [class.up]="group.foreignBuy > 0" [class.down]="group.foreignBuy < 0">
+                            {{ group.foreignBuy > 0 ? '+' : '' }}{{ group.foreignBuy | number:'1.0-0' }}
+                        </span>
+                    </div>
+                    <div class="data-item" *ngIf="group.trustBuy != null">
+                        <span class="lbl">投信買賣超 (張)</span>
+                        <span class="val" [class.up]="group.trustBuy > 0" [class.down]="group.trustBuy < 0">
+                            {{ group.trustBuy > 0 ? '+' : '' }}{{ group.trustBuy | number:'1.0-0' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 明細清單 (展開) -->
+            <div class="details-mini" *ngIf="expandedSymbols.has(group.symbol)">
+                <ul class="record-list">
+                    <li *ngFor="let record of group.records">
+                        <span>📅 {{ record.date }}</span>
+                        <span>💰 {{ record.price | number:'1.2-4' }}</span>
+                        <span>📦 {{ record.shares | number:'1.2-4' }}</span>
+                        <button class="btn-record-del" (click)="deleteRecord(record.id)">&times;</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 新增卡片按鈕 -->
+        <button class="add-card-btn" (click)="showAddForm = true">
+            <div class="add-circle">＋</div>
+            <span>新增股票或庫存紀錄</span>
+        </button>
+    </div>
+
+    <!-- 4. 新增庫存彈窗 (解決日期裁切問題) -->
+    <div class="modal-overlay" *ngIf="showAddForm">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <h3>➕ 新增庫存紀錄</h3>
+                <span class="close-btn" (click)="showAddForm = false">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-field full">
+                        <label>股票代碼</label>
+                        <input type="text" [(ngModel)]="newRecord.symbol" (ngModelChange)="onSearchInput($event)" placeholder="輸入代碼或搜尋...">
+                        <ul class="search-dropdown" *ngIf="searchResults.length > 0">
+                            <li *ngFor="let result of searchResults" (click)="selectSearchResult(result.symbol, result.name)">
+                                <strong>{{ result.name }}</strong> ({{ result.symbol }})
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="form-field">
+                        <label>成交日期</label>
+                        <input type="date" [(ngModel)]="newRecord.date" (ngModelChange)="fetchReferenceData()">
+                    </div>
+                    <div class="form-field">
+                        <label>成交單價 {{ loadingRef ? '(⌛)' : '' }}</label>
+                        <input type="number" step="any" [(ngModel)]="newRecord.price" [placeholder]="loadingRef ? '讀取中...' : '輸入價格'">
+                    </div>
+                    <div class="form-field">
+                        <label>成交股數</label>
+                        <input type="number" step="any" [(ngModel)]="newRecord.shares" placeholder="輸入股數">
+                    </div>
+                    <div class="form-field" *ngIf="newRecord.exchangeRate !== 1">
+                        <label>匯率 (TWD)</label>
+                        <input type="number" step="any" [(ngModel)]="newRecord.exchangeRate">
+                    </div>
+                    <div class="form-field toggle">
+                        <label class="switch">
+                            <input type="checkbox" [(ngModel)]="continuousMode">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>連續登錄模式</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" (click)="showAddForm = false">取消</button>
+                    <button class="btn-save" (click)="submitAddInventory()" [disabled]="loadingRef || !newRecord.shares">✅ 儲存庫存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [RESTORE] K 線圖組件 -->
+    <app-chart-modal 
+        [symbol]="chartSymbol" 
+        [isVisible]="isChartVisible" 
+        (closeEvent)="isChartVisible = false">
+    </app-chart-modal>
+
+    <!-- [NEW] 風險診斷彈窗 -->
+    <app-risk-modal
+        [symbol]="riskModalSymbol"
+        [isVisible]="isRiskModalVisible"
+        [cost]="riskModalCost"
+        (closeEvent)="isRiskModalVisible = false">
+    </app-risk-modal>
+</div>

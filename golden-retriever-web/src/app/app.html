@@ -1,0 +1,122 @@
+<div class="app-layout">
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand">
+        <span class="logo">🐕</span>
+        <h1>Golden Retriever</h1>
+      </div>
+
+      <div class="real-time-data" *ngIf="goldData() as goldResponse">
+        <div class="gold-card" [class.fallback]="!!goldResponse?.gold?.isFallback">
+          <span class="label">🪙 黃金報價</span>
+          <span class="price">NT$ {{ goldResponse?.gold?.priceTWD | number:'1.0-0' }}/g</span>
+        </div>
+      </div>
+
+      <div class="rates-strip" *ngIf="ratesData() as ratesResponse">
+        <button class="add-rate-btn" (click)="openAddCurrencyModal()" title="新增幣別">+</button>
+
+        <ng-container *ngFor="let code of ratesResponse.currencyOrder">
+          <div class="rate-item" *ngIf="ratesResponse.rates[code]">
+            <span class="code">📉 {{ code }}</span>
+            <span class="price">{{ ratesResponse.rates[code].price | number:'1.0-2' }}</span>
+            <span class="remove-rate" (click)="removeCurrency(code, $event)">&times;</span>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="header-actions">
+        <div class="update-time" *ngIf="dashboardData() as dash">
+          更新於 {{ dash.updatedAt }}
+        </div>
+
+        <!-- [NEW] Fugle API 額度顯示 -->
+        <div class="quota-badge" *ngIf="fugleQuota() !== null" [class.low]="fugleQuota()! < 50" title="Fugle API 今日剩餘額度">
+          ⚡ {{ fugleQuota() === -1 ? '--' : fugleQuota() }}
+        </div>
+
+        <button class="settings-btn" (click)="openSettings()" title="系統設定">⋮</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="unified-container">
+    <section class="section-watchlist">
+      <div class="section-header">
+        <h2>📊 觀察清單</h2>
+      </div>
+      <app-sidebar
+        [portfolio]="dashboardData()?.portfolio || []"
+        (dataChanged)="refreshAllData()">
+      </app-sidebar>
+    </section>
+
+    <section class="section-inventory">
+      <div class="section-header">
+        <h2>💼 庫存管理</h2>
+      </div>
+      <div class="dashboard-content">
+        <!-- 移除 *ngIf="!isLoading()"，讓組件在背景刷新時不被銷毀 -->
+        <app-inventory
+          [groupedInventory]="dashboardData()?.groupedInventory || []"
+          (dataChanged)="refreshAllData()">
+        </app-inventory>
+      </div>
+      <!-- 僅在完全沒有數據且載入中時顯示大 Loading -->
+      <div class="loading-overlay" *ngIf="isLoading() && !dashboardData()">
+        <div class="spinner"></div>
+        <p>正在載入數據...</p>
+      </div>
+    </section>
+
+    <!-- 量化推薦移至底部 -->
+    <section class="section-quant">
+      <app-quant></app-quant>
+    </section>
+  </main>
+
+  <!-- 系統設定彈窗 -->
+  <div class="modal-overlay" *ngIf="isSettingsVisible()">
+    <div class="modal-content settings-modal">
+      <div class="modal-header">
+        <h3>⚙️ 系統設定</h3>
+        <span class="close-btn" (click)="isSettingsVisible.set(false)">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label>🔑 Fugle API Key</label>
+          <input type="password" [ngModel]="fugleKey()" (ngModelChange)="fugleKey.set($event)" placeholder="貼上金鑰">
+          <small class="quota-info" *ngIf="fugleQuota() !== null">
+            目前 API 剩餘額度: <b>{{ fugleQuota() }}</b> / 500
+          </small>
+        </div>
+        <button class="btn-save" (click)="saveSettings()">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="isCurrencyModalVisible()">
+    <div class="modal-content currency-modal">
+      <div class="modal-header">
+        <h3>📈 新增匯率幣別</h3>
+        <span class="close-btn" (click)="isCurrencyModalVisible.set(false)">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label>選擇幣別 (對台股匯率)</label>
+          <select [ngModel]="newCurrencyCode()" (ngModelChange)="newCurrencyCode.set($event)" class="modal-select">
+            <option value="USD">美元 (USD)</option>
+            <option value="JPY">日圓 (JPY)</option>
+            <option value="CNY">人民幣 (CNY)</option>
+            <option value="EUR">歐元 (EUR)</option>
+            <option value="HKD">港幣 (HKD)</option>
+            <option value="GBP">英鎊 (GBP)</option>
+            <option value="AUD">澳幣 (AUD)</option>
+            <option value="SGD">新加坡幣 (SGD)</option>
+          </select>
+        </div>
+        <button class="btn-save" (click)="confirmAddCurrency()">新增</button>
+      </div>
+    </div>
+  </div>
+</div>

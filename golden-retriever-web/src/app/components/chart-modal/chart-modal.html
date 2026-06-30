@@ -1,0 +1,36 @@
+﻿<div class="modal-overlay" *ngIf="isVisible" (click)="closeModal()">
+    <div class="modal-content chart-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="title-section">
+                <h3>📈 {{ symbol }} K 線圖</h3>
+                <div class="source-selector">
+                    <button [class.active]="currentSource === 'yahoo'" (click)="setChartSource('yahoo')">Yahoo</button>
+                    <button [class.active]="currentSource === 'twse'" (click)="setChartSource('twse')" *ngIf="symbol.includes('.TW') || symbol.includes('.TWO')">證交所</button>
+                    <button [class.active]="currentSource === 'fugle'" (click)="setChartSource('fugle')" *ngIf="symbol.includes('.TW') || symbol.includes('.TWO')">富果</button>
+                </div>
+                <!-- 週期選擇器：僅在 Yahoo 來源下開放週/月K，避免富果/證交所產生無效請求 -->
+                <div class="period-selector">
+                    <button [class.active]="currentPeriod === '1d'" (click)="setChartPeriod('1d')">日K</button>
+                    <ng-container *ngIf="currentSource === 'yahoo'">
+                        <button [class.active]="currentPeriod === '1w'" (click)="setChartPeriod('1w')">週K</button>
+                        <button [class.active]="currentPeriod === '1m'" (click)="setChartPeriod('1m')">月K</button>
+                    </ng-container>
+                </div>
+            </div>
+            <span class="close-btn" (click)="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="fugle-input" *ngIf="currentSource === 'fugle'">
+                <input type="password" [(ngModel)]="fugleKey" placeholder="輸入 Fugle API Key" (keyup.enter)="loadAndRenderChart()">
+                <button (click)="loadAndRenderChart()">確認</button>
+            </div>
+            <div class="chart-container-wrapper">
+                <div #chartContainer class="chart-container"></div>
+                <div class="loading-overlay" *ngIf="isLoading">
+                    <div class="spinner"></div>
+                </div>
+                <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
+            </div>
+        </div>
+    </div>
+</div>

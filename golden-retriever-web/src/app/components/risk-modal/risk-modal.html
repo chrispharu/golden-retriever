@@ -1,0 +1,85 @@
+<div class="modal-overlay" *ngIf="isVisible" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="mh">
+      <div>
+        <div class="mt">{{ symbol }} 風險儀表板</div>
+        <div class="ms">Black-Scholes 模型 · {{ report?.risk?.timestamp | date:'yyyy/MM/dd HH:mm' }}</div>
+      </div>
+      <button class="cb" (click)="close()">✕</button>
+    </div>
+
+    <div class="mb" *ngIf="!loading; else loadingTpl">
+      <!-- 1. 歷史波動率 HV -->
+      <div class="sl">① 歷史波動率 HV</div>
+      <div class="hv-row">
+        <div class="hvp"><div class="hl">20 日</div><div class="hv c-hi">{{ report?.risk?.hv20 | number:'1.1-1' }}%</div></div>
+        <div class="hvp"><div class="hl">60 日</div><div class="hv c-md">{{ report?.risk?.hv60 | number:'1.1-1' }}%</div></div>
+        <div class="hvp"><div class="hl">120 日</div><div class="hv c-lo">{{ report?.risk?.hv120 | number:'1.1-1' }}%</div></div>
+      </div>
+      <div class="note" *ngIf="report?.risk?.hv20 > report?.risk?.hv120">短期波動高於長期均值，近期市場較不穩定</div>
+      <div class="note" *ngIf="report?.risk?.hv20 <= report?.risk?.hv120">波動率處於平穩區間</div>
+
+      <div class="divider"></div>
+
+      <!-- 2. VaR 風險值 -->
+      <div class="sl">② VaR 風險值 (信心水準)</div>
+      <div class="vb">
+        <div class="vr">
+          <span class="vlb">單日 95% 信心區間</span>
+          <span class="vval">-{{ report?.risk?.dailyVaR95 | number:'1.2-2' }}%</span>
+        </div>
+        <div class="vr">
+          <span class="vlb">單日 99% 信心區間</span>
+          <span class="vval">-{{ report?.risk?.dailyVaR99 | number:'1.2-2' }}%</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 3. BS 理論價格區間 -->
+      <div class="sl">③ BS 理論價格區間 (30 天)</div>
+      <div class="rb">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--color-text-tertiary)">
+          <span>下軌 -1σ</span><span>現價</span><span>上軌 +1σ</span>
+        </div>
+        <div class="rtrack">
+          <div class="rzone"></div>
+          <div class="rdot" [style.left.%]="getRangePos()"></div>
+        </div>
+        <div class="rlabs">
+          <span class="c-hi">{{ report?.risk?.lowerBond | number:'1.0-1' }}</span>
+          <span class="c-bl">{{ report?.price | number:'1.0-1' }}</span>
+          <span class="c-lo">{{ report?.risk?.upperBond | number:'1.0-1' }}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 4. AI 解讀 -->
+      <div class="ai-tag">AI 白話解讀</div>
+      <div class="ai-box">
+        <div *ngIf="isAsking" class="ai-loading">顧問正在思考中...</div>
+        <div *ngIf="!isAsking">{{ aiInsight || report?.ai?.insight }}</div>
+      </div>
+
+      <!-- 5. 快速行動按鈕 (雙欄位樣式) -->
+      <div class="acts">
+        <button class="abtn" (click)="askSpecific('針對 ' + symbol + ' 的 VaR 風險幫我規劃停損策略')">
+          <div class="at">停損規劃 ↗</div>
+          <div class="as">根據 VaR 設定</div>
+        </button>
+        <button class="abtn" (click)="askSpecific(symbol + ' 目前的波動率與持倉，我應該減碼還是持有？')">
+          <div class="at">持倉建議 ↗</div>
+          <div class="as">風險配比優化</div>
+        </button>
+      </div>
+    </div>
+
+    <ng-template #loadingTpl>
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>正在執行 Black-Scholes 風險矩陣運算並請求 AI 洞察...</p>
+      </div>
+    </ng-template>
+  </div>
+</div>
